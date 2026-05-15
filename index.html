@@ -1718,6 +1718,8 @@ function App() {
       React.createElement(Sec, {title:"Dlaczego fireTMS pasuje do Twojej firmy", color:"#e8531e"},
         (function(){
           var a = answers;
+          var walutaFromTransp2 = {krajowy:"pln", miedzynarodowy:"eur", mieszany:"mixed"};
+          var waluta = a.waluta_faktur || walutaFromTransp2[a.typ_transportu] || "eur";
           var lines = [];
           var typMap = {T:"firmę transportową",S:"firmę spedycyjną",TS:"firmę transportowo-spedycyjną",W:"własny transport"};
           var typStr = typMap[r.typ]||"Twoją firmę";
