@@ -61,6 +61,14 @@ textarea:focus{border-color:#e8531e;outline:none}
   <input type="hidden" name="eurowag"/>
   <input type="hidden" name="wie_rentownosc"/>
   <input type="hidden" name="jednoosobowa"/>
+  <input type="hidden" name="fv_wystawia"/>
+  <input type="hidden" name="komunikacja_kierowca"/>
+  <input type="hidden" name="pilnowanie_terminow"/>
+  <input type="hidden" name="cmr_kiedy"/>
+  <input type="hidden" name="klienci_elektronicznie"/>
+  <input type="hidden" name="uzywa_here"/>
+  <input type="hidden" name="zlecenia_stale_proc"/>
+  <input type="hidden" name="raport_link"/>
   <input type="hidden" name="ref"/>
   <input type="hidden" name="data"/>
 </form>
@@ -83,10 +91,23 @@ var TEST_MODE = (function(){
   catch(e){ return false; }
 })();
 
+// ─── RAPORT Z URL (?raport=BASE64) ───────────────────────────────────────────
+var RAPORT_FROM_URL = (function(){
+  try {
+    var p = new URLSearchParams(window.location.search);
+    var r = p.get("raport");
+    if (r) return JSON.parse(decodeURIComponent(atob(r)));
+  } catch(e) {}
+  return null;
+})();
+
 // ─── NETLIFY FORMS — STATYSTYKI ──────────────────────────────────────────────
 function sendStats(a, r) {
   try {
     var eurowagList = (a.eurowag_produkty||[]).join(",");
+    var raportEncoded = "";
+    try { raportEncoded = btoa(encodeURIComponent(JSON.stringify(a))); } catch(e){}
+    var raportLink = raportEncoded ? (window.location.origin + window.location.pathname + "?raport=" + raportEncoded) : "";
     var body = new URLSearchParams({
       "form-name":        "firetms-stats",
       "nazwa_firmy":      a.nazwa_firmy || "",
@@ -101,14 +122,22 @@ function sendStats(a, r) {
       "oszczednosci_godz":String(Math.round(r.totGodz*10)/10 || ""),
       "roi_dni":          String(r.roiDni || ""),
       "typ_transportu":   a.typ_transportu || "",
-      "typ_ladunku":      a.typ_ladunku || "",
+      "typ_ladunku":      (a.typ_ladunku||[]).join(","),
       "waluta_faktur":    a.waluta_faktur || "",
       "ma_gps":           a.ma_gps || (eurowagList.indexOf("gbox")>=0?"tak":"nie"),
       "eurowag":          eurowagList || "brak",
-      "wie_rentownosc":   a.wie_rentownosc || "",
-      "jednoosobowa":     r.isJednoosobowa ? "tak" : "nie",
-      "ref":              URL_REF || "",
-      "data":             new Date().toISOString().slice(0,10)
+      "wie_rentownosc":      a.wie_rentownosc || "",
+      "jednoosobowa":        r.isJednoosobowa ? "tak" : "nie",
+      "fv_wystawia":         (a.fv_wystawia||[]).join(","),
+      "komunikacja_kierowca":(a.komunikacja_kierowca||[]).join(","),
+      "pilnowanie_terminow": (a.pilnowanie_terminow||[]).join(","),
+      "cmr_kiedy":           a.cmr_kiedy || "",
+      "klienci_elektronicznie": a.klienci_elektronicznie || "",
+      "uzywa_here":          a.uzywa_here || "",
+      "zlecenia_stale_proc": String(a.zlecenia_stale_proc || ""),
+      "raport_link":         raportLink,
+      "ref":                 URL_REF || "",
+      "data":                new Date().toISOString().slice(0,10)
     });
     fetch("/", {
       method: "POST",
@@ -275,6 +304,28 @@ function GpsSelect(props) {
   );
 }
 
+function CBG(props) {
+  var label=props.label, options=props.options, value=props.value, onChange=props.onChange, hint=props.hint;
+  return React.createElement("div", {style:{marginBottom:24}},
+    React.createElement("div", {className:"q-label"}, label),
+    hint && React.createElement("div", {className:"q-hint"}, hint),
+    React.createElement("div", {style:{display:"flex",flexDirection:"column",gap:4}},
+      options.map(function(o){
+        var val = typeof o==="string" ? o : o.value;
+        var lab = typeof o==="string" ? o : o.label;
+        var checked = (value||[]).indexOf(val)>=0;
+        return React.createElement("label", {key:val, className:"cb-row"},
+          React.createElement("input", {
+            type:"checkbox", checked:checked,
+            onChange:function(){ onChange(val); }
+          }),
+          React.createElement("span", {style:{fontSize:14,color:"#3d4a5c"}}, lab)
+        );
+      })
+    )
+  );
+}
+
 function Cond(props) {
   return React.createElement("div", {className:"cond"}, props.children);
 }
@@ -303,9 +354,12 @@ function calcResults(a) {
   var zlecT     = isT ? zlec : 0;
 
   var walutaMap = {pln:5, eur:80, mixed:50, other:30};
+  // Waluta: jeśli nie ustawiona ręcznie, wyciągamy z rodzaju transportu
+  var walutaFromTransp = {krajowy:"pln", miedzynarodowy:"eur", mieszany:"mixed"};
+  var waluta = a.waluta_faktur || walutaFromTransp[a.typ_transportu] || "eur";
   var fv        = zlec;
   var fvAdhoc   = zlecAdhoc;
-  var fvWalut   = Math.round(fv * (walutaMap[a.waluta_faktur||"eur"]||50) / 100);
+  var fvWalut   = Math.round(fv * (walutaMap[waluta]||50) / 100);
   var fvPakiet  = a.wymaga_pdf_pakiet==="tak" ? Math.round(fv*(a.procent_pakiet_pdf||100)/100) : 0;
   var listy     = (a.uzywa_poczty==="tak"||a.uzywa_poczty==="oba") ? (a.listy_pocztowe||0) : 0;
 
@@ -347,7 +401,7 @@ function calcResults(a) {
   }
 
   // SMS do kierowcy (Enterprise)
-  if (isT && a.komunikacja_kierowca!=="aplikacja") {
+  if (isT && (a.komunikacja_kierowca||[]).indexOf("aplikacja")<0) {
     minSped.push({
       nazwa:"SMS do kierowcy z szablonem trasy i ładunku",
       min: zlecT*1.5,
@@ -357,7 +411,7 @@ function calcResults(a) {
   }
 
   // GPS checks (Enterprise) - 15 sek/sprawdzenie (przelaczanie miedzy programami), dla chłodni 7 sek
-  var isChlodnia = a.typ_ladunku==="chlodn";
+  var isChlodnia = (a.typ_ladunku||[]).indexOf("chlodn")>=0;
   if (isT && (a.ma_gps==="tak" || (a.eurowag_produkty||[]).indexOf("gbox")>=0)) {
     var checks = a.gps_checks_per_day || 10;
     var numSpedGps = a.liczba_spedytorow || 1;
@@ -552,6 +606,16 @@ function calcResults(a) {
     });
   }
 
+  // Archiwum papierowe
+  if (a.dokumenty_gdzie==="segregatory") {
+    minKs.push({
+      nazwa:"Archiwizacja — eliminacja papierowych komplementów (CMR+FV+Zlecenie w segregatorze)",
+      min: Math.min(fv*1, 180),
+      pakiet:"Basic",
+      opis:fv+" zleceń × ~1 min (drukowanie i kompletowanie papierowych zestawów → cyfrowe archiwum z pobieraniem ZIP)"
+    });
+  }
+
   // Eksport przelewow (Basic)
   minKs.push({nazwa:"Eksport paczki przelewów do banku", min:120, pakiet:"Basic", opis:"~2 godz/mies"});
 
@@ -624,10 +688,10 @@ function calcResults(a) {
   if (isT && a.gps_system && a.gps_system.indexOf("Nie ma na liscie")>=0) {
     jakosciowe.push({tytul:"Integracja GPS - zorganizujemy połączenie z Waszym systemem", opis:"Wasz system GPS nie jest jeszcze na liście gotowych integracji fireTMS. Nasz zespół techniczny skontaktuje się z dostawcą GPS i zorganizuje integrację - bez dodatkowych kosztów dla Ciebie. Oszczędności z GPS będą dostępne po uruchomieniu integracji (zwykle 2-4 tygodnie od wdrożenia)."});
   }
-  if (a.typ_ladunku==="chlodn") {
+  if ((a.typ_ladunku||[]).indexOf("chlodn")>=0) {
     jakosciowe.push({tytul:"Uwaga: transport chłodniczy - specjalne potrzeby", opis:"fireTMS nie pokazuje temperatury w chłodziarkach - do sprawdzania temp. nadal potrzebna aplikacja GPS. Oszczędności z GPS zostały zredukowane o połowę. Aplikacja mobilna Driver ma ograniczenia przy większej ilości dokumentów - zalecamy rozmowę z konsultantem."});
   }
-  if (a.typ_ladunku==="kruszywa") {
+  if ((a.typ_ladunku||[]).indexOf("kruszywa")>=0) {
     jakosciowe.push({tytul:"Rozliczenie tonażowe - możliwe w fireTMS", opis:"System obsługuje rozliczenie od tony co eliminuje ręczne obliczenia przy każdym zleceniu."});
   }
   if (a.klienci_elektronicznie==="tak"||a.klienci_elektronicznie==="czesc") {
@@ -649,10 +713,10 @@ function calcResults(a) {
   if (isT && (a.ma_gps==="tak" || (a.eurowag_produkty||[]).indexOf("gbox")>=0)) {
     jakosciowe.push({tytul:"Km puste vs. pełne - rzeczywista efektywność floty", opis:"Gdy kierowca opuści punkt rozładunku, system pobiera stan licznika z GPS. Widzisz ile km pojazd jechał pusty (bez ładunku) a ile pełny. Jeśli Twoje trasy mają duże podjazdy - to wpływa bezpośrednio na stawkę za km i rentowność zlecenia."});
   }
-  if (isS && (a.waluta_faktur==="eur"||a.waluta_faktur==="mixed"||a.waluta_faktur==="other") && (a.fv_wystawia==="ksiegowa"||a.fv_wystawia==="biuro")) {
+  if (isS && (waluta==="eur"||waluta==="mixed"||waluta==="other") && ((a.fv_wystawia||[]).indexOf("ksiegowa")>=0||(a.fv_wystawia||[]).indexOf("wlasciciel")>=0)) {
     jakosciowe.push({tytul:"Różnice kursowe - kontrola walutowa dla księgowości", opis:"Księgowość widzi różnice kursowe na płatnościach i może zdecydować w jakiej walucie wykonać przelew (EUR czy PLN) w danym momencie - szczególnie ważne przy fakturach od przewoźników zagranicznych."});
   }
-  if (a.waluta_faktur==="eur"||a.waluta_faktur==="mixed"||a.waluta_faktur==="other") {
+  if (waluta==="eur"||waluta==="mixed"||waluta==="other") {
     jakosciowe.push({tytul:"Zestawienie faktur przeliczonych na PLN + suma VAT", opis:"Możliwość wygenerowania zestawienia wszystkich FV przeliczonych na PLN oraz sumy VAT za dowolny okres - bez ręcznego przeliczania i łączenia danych z różnych źródeł."});
   }
   if (a.serwisy_licznikowe==="excel"||a.serwisy_licznikowe==="nie") {
@@ -772,27 +836,27 @@ function typLabel(typ) {
 
 function App() {
   var ss = useState(0);               var step=ss[0];       var setStep=ss[1];
-  var sr = useState(false);           var showR=sr[0];      var setShowR=sr[1];
-  var sa = useState({
+  var sr = useState(!!RAPORT_FROM_URL); var showR=sr[0];      var setShowR=sr[1];
+  var sa = useState(RAPORT_FROM_URL ? Object.assign({}, RAPORT_FROM_URL) : {
     nazwa_firmy:"",
     typ_firmy:"TS", liczba_firm:1,
     liczba_pojazdow:15, liczba_spedytorow:6,
     liczba_ksiegowosc:1,
     ma_dodatkowych:"nie", role_dodatkowe:[], liczba_dodatkowych:0,
     eurowag_produkty:[],
-    typ_transportu:"mieszany", typ_ladunku:"standard",
+    typ_transportu:"mieszany", typ_ladunku:["standard"],
     rozlicza_kierowcow:"nie", rozliczanie_jak:"",
     uzywa_here:"",
     zlecenia_mies:150, procent_adhoc:30,
     robi_ltl:"nie", ltl_count:0,
     robi_przeladunki:"nie", przeladunki_count:0,
-    komunikacja_kierowca:"whatsapp",
+    komunikacja_kierowca:["whatsapp"],
     gps_system:"", ma_gps:"tak", gps_checks_per_day:10,
     cmr_kiedy:"tydzien",
     klienci_elektronicznie:"czesc", procent_elektronicznie:50,
-    pilnowanie_terminow:"excel",
+    pilnowanie_terminow:["excel"],
     wie_rentownosc:"nie",
-    fv_wystawia:"ksiegowa",
+    fv_wystawia:["ksiegowa"],
     waluta_faktur:"eur",
     wymaga_pdf_pakiet:"nie", procent_pakiet_pdf:80,
     problem_platnosci:"czasem",
@@ -829,6 +893,12 @@ function App() {
     var cur = answers.eurowag_produkty || [];
     var next = cur.indexOf(prod)>=0 ? cur.filter(function(r){ return r!==prod; }) : cur.concat([prod]);
     set("eurowag_produkty", next);
+  }
+
+  function toggleMulti(key, val) {
+    var cur = answers[key] || [];
+    var next = cur.indexOf(val)>=0 ? cur.filter(function(r){ return r!==val; }) : cur.concat([val]);
+    set(key, next);
   }
 
   function next(){
@@ -957,11 +1027,16 @@ function App() {
           {value:"miedzynarodowy",  label:"Międzynarodowy (Europa)"},
           {value:"mieszany",        label:"Mieszany (oba)"},
         ],
-        value:answers.typ_transportu, onChange:function(v){ set("typ_transportu",v); },
+        value:answers.typ_transportu, onChange:function(v){
+          set("typ_transportu",v);
+          var wm={krajowy:"pln",miedzynarodowy:"eur",mieszany:"mixed"};
+          set("waluta_faktur", wm[v]||"eur");
+        },
         hint:"Międzynarodowy = głównie faktury EUR, krajowy = głównie PLN"
       }),
-      React.createElement(RG, {
+      React.createElement(CBG, {
         label:"Jaki jest główny rodzaj przewożonych ładunków?",
+        hint:"Możesz zaznaczyć więcej niż jeden",
         options:[
           {value:"standard",  label:"Standardowy / Groupage"},
           {value:"chlodn",    label:"Chłodniczy / Temperatura kontrolowana"},
@@ -969,8 +1044,7 @@ function App() {
           {value:"adr",       label:"ADR / Niebezpieczne"},
           {value:"inne",      label:"Inne"},
         ],
-        value:answers.typ_ladunku, onChange:function(v){ set("typ_ladunku",v); },
-        hint:"Wpływa na dobór odpowiednich funkcji systemu"
+        value:answers.typ_ladunku, onChange:function(v){ toggleMulti("typ_ladunku", v); }
       }),
       React.createElement("div", {style:{marginBottom:24}},
         React.createElement("div", {className:"q-label"}, "Czy Państwo korzystają z produktów grupy Eurowag?"),
@@ -1045,14 +1119,15 @@ function App() {
     );
 
     if (id==="kierowcy") return React.createElement(React.Fragment, null,
-      React.createElement(RG, {
+      answers.typ_firmy!=="S" && React.createElement(CBG, {
         label:"W jaki sposób Państwo przekazują kierowcy informacje o trasie wraz ze szczegółami ładunku?",
+        hint:"Możesz zaznaczyć więcej niż jeden sposób",
         options:[
           {value:"whatsapp", label:"WhatsApp / SMS ręcznie"},
-          {value:"aplikacja",label:"Aplikacja mobilna"},
+          {value:"aplikacja",label:"Aplikacja mobilna (własna)"},
           {value:"inne",     label:"Inny sposób"},
         ],
-        value:answers.komunikacja_kierowca, onChange:function(v){ set("komunikacja_kierowca",v); }
+        value:answers.komunikacja_kierowca, onChange:function(v){ toggleMulti("komunikacja_kierowca", v); }
       }),
       (answers.eurowag_produkty||[]).indexOf("gbox")<0 && React.createElement(GpsSelect, {value:answers.gps_system, onChange:function(v){
         set("gps_system",v);
@@ -1070,7 +1145,7 @@ function App() {
           hint:"Czas potrzebny na zalogowanie, znalezienie pojazdu i sprawdzenie pozycji - fireTMS pokazuje lokalizację w tej samej zakładce co zlecenie"
         })
       ),
-      React.createElement(RG, {
+      answers.typ_firmy!=="S" && React.createElement(RG, {
         label:"Kiedy Państwo otrzymują dokumenty CMR od kierowców?",
         options:[
           {value:"ten_sam_dzien",  label:"Tego samego dnia (skan/zdjęcie)"},
@@ -1097,15 +1172,17 @@ function App() {
           hint:"Dla tych zleceń fireTMS wyśle CMR, FV i zlecenie bezpośrednio z systemu — bez otwierania programu pocztowego"
         })
       ),
-      React.createElement(RG, {
+      React.createElement(CBG, {
         label:"W jaki sposób Państwo pilnują terminów przeglądów, OC/AC oraz ważności dokumentów kierowców?",
+        hint:"Możesz zaznaczyć więcej niż jeden sposób",
         options:[
           {value:"glowa",    label:"W głowie / brak systemu"},
+          {value:"zeszyt",   label:"Zeszyt / notatnik"},
           {value:"excel",    label:"Excel / arkusz"},
           {value:"kalendarz",label:"Kalendarz (Google/Outlook)"},
           {value:"gps_app",  label:"Kalendarium w aplikacji GPS"},
         ],
-        value:answers.pilnowanie_terminow, onChange:function(v){ set("pilnowanie_terminow",v); }
+        value:answers.pilnowanie_terminow, onChange:function(v){ toggleMulti("pilnowanie_terminow", v); }
       }),
       (answers.typ_firmy==="T"||answers.typ_firmy==="TS"||answers.typ_firmy==="W") && React.createElement(RG, {
         label:"Czy Państwo pilnują terminów serwisowych pojazdów na podstawie przebiegu (km) - np. wymiana oleju, klocki hamulcowe?",
@@ -1158,22 +1235,19 @@ function App() {
     );
 
     if (id==="ksiegowosc") return React.createElement(React.Fragment, null,
-      React.createElement(RG, {
+      React.createElement(CBG, {
         label:"Kto wystawia faktury?",
-        options:[{value:"spedytor",label:"Spedytor"},{value:"ksiegowa",label:"Księgowa"},{value:"biuro",label:"Biuro rachunkowe"},{value:"inne",label:"Inne"}],
-        value:answers.fv_wystawia, onChange:function(v){ set("fv_wystawia",v); }
-      }),
-      React.createElement(RG, {
-        label:"W jakiej walucie są wystawiane faktury?",
+        hint:"Możesz zaznaczyć więcej niż jeden",
         options:[
-          {value:"eur",   label:"Głównie EUR"},
-          {value:"mixed", label:"Mniej więcej po połowie PLN/EUR"},
-          {value:"pln",   label:"Głównie PLN"},
-          {value:"other", label:"Różne waluty (GBP, CHF...)"},
+          {value:"wlasciciel",      label:"Ja sam / właściciel"},
+          {value:"spedytor",        label:"Spedytor / pracownik operacyjny"},
+          {value:"ksiegowa",        label:"Księgowa / pracownik finansowy"},
+          {value:"samofakturowanie",label:"Samofakturowanie (klient wystawia FV za nas)"},
+          {value:"inne",            label:"Inne"},
         ],
-        value:answers.waluta_faktur, onChange:function(v){ set("waluta_faktur",v); },
-        hint:"Przy FV walutowych - system automatycznie pobiera kurs NBP z dnia rozładunku"
+        value:answers.fv_wystawia, onChange:function(v){ toggleMulti("fv_wystawia", v); }
       }),
+
       React.createElement(RG, {
         label:"Czy klienci wymagają FV, CMR i Zlecenia w jednym pliku PDF?",
         options:[{value:"tak",label:"Tak"},{value:"nie",label:"Nie"}],
@@ -1186,12 +1260,7 @@ function App() {
           suffix:"%", min:1, max:100
         })
       ),
-      React.createElement(RG, {
-        label:"Czy FV wraz z dokumentami są wysyłane mailem bezpośrednio z systemu/programu?",
-        options:[{value:"tak",label:"Tak, z systemu/programu księgowego"},{value:"nie",label:"Nie, robię to ręcznie"}],
-        value:answers.wysyla_fv_mailem, onChange:function(v){ set("wysyla_fv_mailem",v); },
-        hint:"fireTMS umożliwia wysyłkę FV+CMR+Zlecenia mailem bezpośrednio z systemu"
-      }),
+
       React.createElement(RG, {
         label:"Czy muszą Państwo windykować lub przypominać klientom o zapłaceniu faktury po terminie?",
         options:[{value:"tak",label:"Tak, regularnie"},{value:"czasem",label:"Czasem"},{value:"nie",label:"Rzadko / nie"}],
@@ -1217,8 +1286,9 @@ function App() {
         value:answers.oznaczanie_platnosci, onChange:function(v){ set("oznaczanie_platnosci",v); },
         hint:"Dla firm powyżej 500 zleceń/mies import wyciągu bankowego jest dużą oszczędnością"
       }),
-      React.createElement(RG, {
+      answers.klienci_elektronicznie!=="tak" && React.createElement(RG, {
         label:"Czy Państwo wysyłają dokumenty pocztą lub kurierem?",
+        hint:"Nie dotyczy jeśli wszyscy klienci akceptują dokumenty elektroniczne",
         options:[
           {value:"tak",    label:"Tak, Pocztą Polską"},
           {value:"kurier", label:"Tak, kurierem"},
@@ -1321,17 +1391,12 @@ function App() {
           value:answers.oferty_klientom, onChange:function(v){ set("oferty_klientom",v); }
         }),
         isSpedycja && React.createElement(RG, {
-          label:"Czy Państwo sprzedają tylko ładunki (zlecają przewóz zewnętrznym przewoźnikom)?",
-          options:[{value:"tak",label:"Tak - zlecamy przewóz"},{value:"nie",label:"Nie - prowadzimy też pojazdy przewoźników"}],
-          value:answers.tylko_sprzedaz, onChange:function(v){ set("tylko_sprzedaz",v); }
+          label:"Czy Państwo prowadzą pojazdy zewnętrznych przewoźników przez własnych spedytorów?",
+          options:[{value:"nie",label:"Nie — zlecamy przewóz i tyle"},{value:"tak",label:"Tak — prowadzimy też pojazdy przewoźników"}],
+          value:answers.prowadzi_pojazdy, onChange:function(v){ set("prowadzi_pojazdy",v); }
         }),
-        isSpedycja && answers.tylko_sprzedaz==="nie" && React.createElement(Cond, null,
-          React.createElement(RG, {
-            label:"Czy Państwo prowadzą pojazdy przewoźników przez własnych spedytorów?",
-            options:[{value:"tak",label:"Tak"},{value:"nie",label:"Nie"}],
-            value:answers.prowadzi_pojazdy, onChange:function(v){ set("prowadzi_pojazdy",v); }
-          }),
-          answers.prowadzi_pojazdy==="tak" && React.createElement(NI, {
+        isSpedycja && answers.prowadzi_pojazdy==="tak" && React.createElement(Cond, null,
+          React.createElement(NI, {
             label:"Ile pojazdów przewoźników Państwo prowadzą w ten sposób?",
             value:answers.liczba_pojazdow_przew, onChange:function(v){ set("liczba_pojazdow_przew",v); },
             suffix:"pojazdów", min:1, max:500
@@ -1388,18 +1453,7 @@ function App() {
         placeholder:"Np. powtarzalne czynności, szukanie dokumentów, telefony od klientów o statusy...",
         rows:3
       }),
-      React.createElement(TI, {
-        label:"Jakie elementy pracy są powtarzalne i mogłyby wykonywać się automatycznie?",
-        value:answers.elementy_powtarzalne, onChange:function(v){ set("elementy_powtarzalne",v); },
-        placeholder:"Np. wystawianie tych samych faktur co miesiąc, wysyłka maili z potwierdzeniami...",
-        rows:3
-      }),
-      React.createElement(TI, {
-        label:"Dodatkowe uwagi lub pytania?",
-        value:answers.uwagi, onChange:function(v){ set("uwagi",v); },
-        placeholder:"Cokolwiek, co Państwo chcieliby dodać lub doprecyzować...",
-        rows:2
-      }),
+
       React.createElement("div", {style:{marginTop:16,padding:"12px 16px",background:"#f6f8fb",borderRadius:8,border:"1px solid #e8ecf1",fontSize:12,color:"#7a8699",lineHeight:1.5}},
         React.createElement("strong", {style:{color:"#3d4a5c"}}, "Informacja: "),
         "Podane odpowiedzi są wykorzystywane wyłącznie w celu przygotowania spersonalizowanego raportu oraz polepszenia jakości kalkulatora. Dane nie są udostępniane osobom trzecim."
@@ -1443,6 +1497,7 @@ function App() {
 
       // Baner trybu testowego
       TEST_MODE && React.createElement("div", {style:{background:"#ff6b00",color:"#fff",textAlign:"center",padding:"10px",fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:20,borderRadius:10}}, "⚠️ TRYB TESTOWY — statystyki nie są wysyłane"),
+      RAPORT_FROM_URL && React.createElement("div", {style:{background:"#1a5fb4",color:"#fff",textAlign:"center",padding:"10px",fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:20,borderRadius:10}}, "👁 PODGLĄD HANDLOWCA — raport klienta "+ (answers.nazwa_firmy||"") +" | Możesz drukować jako PDF"),
 
       // Naglowek
       React.createElement("div", {style:{textAlign:"center",marginBottom:32}},
@@ -1486,15 +1541,15 @@ function App() {
           var items = [];
           var a = answers;
           var hasGboxEva = (a.eurowag_produkty||[]).indexOf("gbox")>=0;
-          if (a.pilnowanie_terminow==="excel"||a.pilnowanie_terminow==="brak")
+          if ((a.pilnowanie_terminow||[]).indexOf("excel")>=0||(a.pilnowanie_terminow||[]).indexOf("glowa")>=0)
             items.push({t:"Terminy OC, przeglądów, ubezpieczeń", teraz:"Excel lub notatnik — ryzyko pominięcia terminu", po:"Automatyczne alerty email 7 / 3 / 1 dzień przed — zero przeoczonych terminów"});
           if (a.ma_gps==="tak" && !hasGboxEva)
             items.push({t:"Sprawdzanie GPS", teraz:"Osobna aplikacja GPS — logowanie, szukanie pojazdu, przełączanie okien ("+((a.gps_checks_per_day||10)*( a.liczba_spedytorow||1))+" razy/dzień)", po:"Lokalizacja pojazdu widoczna bezpośrednio w zleceniu — jedno kliknięcie, bez przełączania"});
           if (hasGboxEva)
             items.push({t:"GPS Eurowag (GBox/EVA)", teraz:"System GPS w osobnym panelu Eurowag", po:"Lokalizacja pojazdu widoczna bezpośrednio w zleceniu fireTMS — integracja gotowa"});
-          if (a.komunikacja_kierowca!=="aplikacja")
+          if ((a.komunikacja_kierowca||[]).indexOf("aplikacja")<0)
             items.push({t:"Komunikacja z kierowcą", teraz:"Ręczny WhatsApp / SMS — dyktowanie trasy, adresów, godzin", po:"SMS z szablonem (trasa, ładunek, godziny) generowany jednym kliknięciem ze zlecenia"});
-          if (a.fv_wystawia==="ksiegowa"||a.fv_wystawia==="biuro")
+          if ((a.fv_wystawia||[]).indexOf("ksiegowa")>=0||(a.fv_wystawia||[]).indexOf("wlasciciel")>=0)
             items.push({t:"Wystawianie faktur", teraz:"Ręczne wpisywanie danych z zleceń do programu fakturowego", po:"FV generowane automatycznie z danych zlecenia — bez przepisywania, bez błędów"});
           if (a.cmr_kiedy==="baza"||a.cmr_kiedy==="poczta_trasa")
             items.push({t:"Dokumenty CMR od kierowców", teraz:"Czekasz na koniec tygodnia lub pocztę — opóźnione rozliczenia", po:"Skan CMR od razu w systemie — możliwość wystawienia FV bez zwłoki"});
@@ -1678,7 +1733,7 @@ function App() {
             punkty.push("Korzystasz z produktów Eurowag — integracja z fireTMS jest gotowa. Dane z kart paliwowych, EVA i GPS trafiają automatycznie do systemu bez ręcznego wpisywania.");
           if (a.wie_rentownosc==="nie"||a.wie_rentownosc==="szacuje")
             punkty.push("Nie znasz dokładnej rentowności zleceń — fireTMS liczy marżę automatycznie na każdym zleceniu. Dowiesz się, które trasy i klienci naprawdę zarabiają.");
-          if (a.waluta_faktur==="eur"||a.waluta_faktur==="mixed")
+          if (waluta==="eur"||waluta==="mixed")
             punkty.push("Wystawiasz faktury w EUR — fireTMS automatycznie pobiera kurs NBP z dnia rozładunku i przelicza wartości. Zero ręcznego sprawdzania tabel walutowych.");
           if ((a.liczba_spedytorow||0)>=3||(a.liczba_pojazdow||0)>=15)
             punkty.push("Twój zespół ma "+(a.liczba_spedytorow||0)+" spedytorów i "+(a.liczba_pojazdow||0)+" pojazdów — przy tej skali wspólny dostęp do zleceń, dokumentów i danych w czasie rzeczywistym eliminuje chaos informacyjny i zdublowaną pracę.");
