@@ -156,7 +156,6 @@ var STEPS = [
   {id:"ksiegowosc", label:"Księgowość"},
   {id:"klient",     label:"Obsługa klienta"},
   {id:"spedycja",   label:"Spedycja i przewoźnicy"},
-  {id:"otwarte",    label:"Podsumowanie"},
 ];
 
 var SPED_H        = 58.21;
@@ -436,7 +435,7 @@ function calcResults(a) {
   }
 
   // LTL (Premium) - z konkretna iloscia
-  if (a.robi_ltl!=="nie" && (a.ltl_count||0)>0) {
+  if ((a.ltl_count||0)>0) {
     minSped.push({
       nazwa:"Doładunki LTL - łączenie ładunków w systemie",
       min: (a.ltl_count||0)*3,
@@ -446,7 +445,7 @@ function calcResults(a) {
   }
 
   // Przeladunki (Premium) - z konkretna iloscia
-  if (a.robi_przeladunki==="tak" && (a.przeladunki_count||0)>0) {
+  if ((a.przeladunki_count||0)>0) {
     minSped.push({
       nazwa:"Zlecenia z przeładunkami / przepinkami",
       min: (a.przeladunki_count||0)*3,
@@ -848,8 +847,8 @@ function App() {
     rozlicza_kierowcow:"nie", rozliczanie_jak:"",
     uzywa_here:"",
     zlecenia_mies:150, procent_adhoc:30,
-    robi_ltl:"nie", ltl_count:0,
-    robi_przeladunki:"nie", przeladunki_count:0,
+    ltl_count:0,
+    przeladunki_count:0,
     komunikacja_kierowca:["whatsapp"],
     gps_system:"", ma_gps:"tak", gps_checks_per_day:10,
     cmr_kiedy:"tydzien",
@@ -1082,30 +1081,18 @@ function App() {
         suffix:"%", min:0, max:100,
         hint:"Zlecenia z giełd, od nowych klientów lub jednorazowe zamówienia stałych klientów. Pozostałe % to powtarzalne trasy z szablonów."
       }),
-      React.createElement(RG, {
-        label:"Czy Państwo obsługują doładunki LTL (kilku klientów w jednym pojeździe)?",
-        options:[{value:"tak_codziennie",label:"Tak, codziennie"},{value:"tak_czasem",label:"Tak, czasem"},{value:"nie",label:"Nie"}],
-        value:answers.robi_ltl, onChange:function(v){ set("robi_ltl",v); }
+      React.createElement(NI, {
+        label:"Ile zleceń LTL (doładunki, kilku klientów w jednym pojeździe) Państwo realizują miesięcznie?",
+        hint:"Wpisz 0 jeśli nie realizują Państwo zleceń LTL",
+        value:answers.ltl_count, onChange:function(v){ set("ltl_count",v); },
+        suffix:"zleceń LTL/mies", min:0, max:2000
       }),
-      answers.robi_ltl!=="nie" && React.createElement(Cond, null,
-        React.createElement(NI, {
-          label:"Ile zleceń LTL Państwo realizują miesięcznie?",
-          value:answers.ltl_count, onChange:function(v){ set("ltl_count",v); },
-          suffix:"zleceń LTL/mies", min:1, max:2000
-        })
-      ),
-      React.createElement(RG, {
-        label:"Czy Państwo wykonują przeładunki, przepinki lub przeładowują towary przez własny magazyn?",
-        options:[{value:"tak",label:"Tak"},{value:"nie",label:"Nie"}],
-        value:answers.robi_przeladunki, onChange:function(v){ set("robi_przeladunki",v); }
+      React.createElement(NI, {
+        label:"Ile przeładunków / przepinek miesięcznie Państwo wykonują?",
+        hint:"Wpisz 0 jeśli nie wykonują Państwo przeładunków ani przepinek",
+        value:answers.przeladunki_count, onChange:function(v){ set("przeladunki_count",v); },
+        suffix:"przeładunków/mies", min:0, max:1000
       }),
-      answers.robi_przeladunki==="tak" && React.createElement(Cond, null,
-        React.createElement(NI, {
-          label:"Ile takich zleceń miesięcznie?",
-          value:answers.przeladunki_count, onChange:function(v){ set("przeladunki_count",v); },
-          suffix:"zleceń/mies", min:1, max:1000
-        })
-      ),
       answers.procent_adhoc>0 && React.createElement(RG, {
         label:"Czy przed przyjęciem zlecenia jednorazowego (np. z giełdy) Państwo obliczają koszty trasy lub frachtu w osobnym narzędziu?",
         hint:"fireTMS ma wbudowaną mapę HERE z kalkulatorem kosztów ciężarowych - bez przeskakiwania do innych narzędzi",
@@ -1395,13 +1382,7 @@ function App() {
           options:[{value:"nie",label:"Nie — zlecamy przewóz i tyle"},{value:"tak",label:"Tak — prowadzimy też pojazdy przewoźników"}],
           value:answers.prowadzi_pojazdy, onChange:function(v){ set("prowadzi_pojazdy",v); }
         }),
-        isSpedycja && answers.prowadzi_pojazdy==="tak" && React.createElement(Cond, null,
-          React.createElement(NI, {
-            label:"Ile pojazdów przewoźników Państwo prowadzą w ten sposób?",
-            value:answers.liczba_pojazdow_przew, onChange:function(v){ set("liczba_pojazdow_przew",v); },
-            suffix:"pojazdów", min:1, max:500
-          })
-        ),
+
         isSpedycja && React.createElement(NI, {
           label:"Ilu stałych przewoźników Państwo posiadają?",
           value:answers.liczba_przewoznikow, onChange:function(v){ set("liczba_przewoznikow",v); },
@@ -1440,25 +1421,7 @@ function App() {
       );
     }
 
-    if (id==="otwarte") return React.createElement(React.Fragment, null,
-      React.createElement(TI, {
-        label:"Jakie są codzienne trudności w Państwa firmie, które chcieliby Państwo usprawnić lub zmienić?",
-        value:answers.trudnosci, onChange:function(v){ set("trudnosci",v); },
-        placeholder:"Np. chaos z dokumentami, brak informacji o statusie pojazdów, ręczne przepisywanie danych...",
-        rows:3
-      }),
-      React.createElement(TI, {
-        label:"Co najbardziej Państwa frustruje w codziennej pracy biurowej?",
-        value:answers.frustracja_biurowa, onChange:function(v){ set("frustracja_biurowa",v); },
-        placeholder:"Np. powtarzalne czynności, szukanie dokumentów, telefony od klientów o statusy...",
-        rows:3
-      }),
 
-      React.createElement("div", {style:{marginTop:16,padding:"12px 16px",background:"#f6f8fb",borderRadius:8,border:"1px solid #e8ecf1",fontSize:12,color:"#7a8699",lineHeight:1.5}},
-        React.createElement("strong", {style:{color:"#3d4a5c"}}, "Informacja: "),
-        "Podane odpowiedzi są wykorzystywane wyłącznie w celu przygotowania spersonalizowanego raportu oraz polepszenia jakości kalkulatora. Dane nie są udostępniane osobom trzecim."
-      )
-    );
 
     return null;
   }
