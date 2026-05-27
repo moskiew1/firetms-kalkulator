@@ -270,38 +270,6 @@ function TI(props) {
   );
 }
 
-function GpsSelect(props) {
-  var value=props.value, onChange=props.onChange;
-  var s = useState(value||"");
-  var search = s[0]; var setSearch = s[1];
-  var o = useState(false);
-  var open = o[0]; var setOpen = o[1];
-  var filtered = GPS_LIST.filter(function(g){ return g.toLowerCase().indexOf(search.toLowerCase())>=0; }).slice(0,10);
-  return React.createElement("div", {style:{marginBottom:24}},
-    React.createElement("div", {className:"q-label"}, "Z jakiego systemu GPS Państwo korzystają?"),
-    React.createElement("div", {className:"q-hint"}, "fireTMS posiada 90+ gotowych integracji - prosimy wpisać nazwę lub wybrać z listy"),
-    React.createElement("div", {className:"gps-wrap"},
-      React.createElement("input", {
-        className:"txt-in",
-        type:"text",
-        value:search,
-        placeholder:"Wpisz lub wybierz GPS...",
-        onChange:function(e){ setSearch(e.target.value); setOpen(true); onChange(e.target.value); },
-        onFocus:function(){ setOpen(true); },
-        onBlur:function(){ setTimeout(function(){ setOpen(false); }, 200); }
-      }),
-      open && filtered.length>0 && React.createElement("div", {className:"gps-drop"},
-        filtered.map(function(g){
-          return React.createElement("div", {
-            key:g,
-            className:"gps-item",
-            onMouseDown:function(){ setSearch(g); onChange(g); setOpen(false); }
-          }, g);
-        })
-      )
-    )
-  );
-}
 
 function CBG(props) {
   var label=props.label, options=props.options, value=props.value, onChange=props.onChange, hint=props.hint;
@@ -681,9 +649,6 @@ function calcResults(a) {
   if (a.dispo_mobile==="tak") {
     jakosciowe.push({tytul:"Aplikacja Dispo - pełny system na telefonie poza biurem", opis:"Spedytor lub menedżer floty ma pełny dostęp do zleceń, harmonogramu i GPS z telefonu. Decyzje w drodze do domu, na spotkaniu u klienta, bez konieczności wracania do biura."});
   }
-  if (a.ksef_problem==="tak") {
-    jakosciowe.push({tytul:"KSeF działa poprawnie - mamy to za Ciebie", opis:"KSeF to jeden z bardziej skomplikowanych procesów wdrożeniowych w Polsce - częste zmiany przepisów, rozbieżności między systemami, problemy z mapowaniem pól faktury. fireTMS ma pełną, aktualnie działającą obsługę KSeF w standardzie (bez dopłat). Jeśli Twój obecny system ma z tym problem - to konkretny argument do zmiany."});
-  }
   if (isT && a.gps_system && a.gps_system.indexOf("Nie ma na liscie")>=0) {
     jakosciowe.push({tytul:"Integracja GPS - zorganizujemy połączenie z Waszym systemem", opis:"Wasz system GPS nie jest jeszcze na liście gotowych integracji fireTMS. Nasz zespół techniczny skontaktuje się z dostawcą GPS i zorganizuje integrację - bez dodatkowych kosztów dla Ciebie. Oszczędności z GPS będą dostępne po uruchomieniu integracji (zwykle 2-4 tygodnie od wdrożenia)."});
   }
@@ -850,7 +815,7 @@ function App() {
     ltl_count:0,
     przeladunki_count:0,
     komunikacja_kierowca:["whatsapp"],
-    gps_system:"", ma_gps:"tak", gps_checks_per_day:10,
+    gps_system:"integracja", ma_gps:"tak", gps_checks_per_day:0,
     cmr_kiedy:"tydzien",
     klienci_elektronicznie:"czesc", procent_elektronicznie:50,
     pilnowanie_terminow:["excel"],
@@ -873,7 +838,7 @@ function App() {
     trudnosci:"", frustracja_biurowa:"",
     elementy_powtarzalne:"", uwagi:"",
     oddzialy_wymiana:"", dispo_mobile:"",
-    ksef_problem:"", weryfikuje_klientow:"",
+    weryfikuje_klientow:"",
     kredyt_kupiecki:"", eksport_excel:"",
     serwisy_licznikowe:"",
     oferty_klientom:"",
@@ -1116,22 +1081,20 @@ function App() {
         ],
         value:answers.komunikacja_kierowca, onChange:function(v){ toggleMulti("komunikacja_kierowca", v); }
       }),
-      (answers.eurowag_produkty||[]).indexOf("gbox")<0 && React.createElement(GpsSelect, {value:answers.gps_system, onChange:function(v){
-        set("gps_system",v);
-        set("ma_gps", (v&&v!=="Nie mamy GPS") ? "tak" : "nie");
-      }}),
+
       (answers.eurowag_produkty||[]).indexOf("gbox")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
         React.createElement("strong", null, "System GPS Eurowag (GBox/EVA): "),
         "fireTMS integruje się z systemem GPS Eurowag - lokalizacja pojazdu widoczna bezpośrednio w zleceniu, bez przełączania aplikacji."
       ),
-      (answers.ma_gps==="tak" || (answers.eurowag_produkty||[]).indexOf("gbox")>=0) && React.createElement(Cond, null,
-        React.createElement(NI, {
-          label:"Ile razy dziennie JEDEN spedytor sprawdza lokalizację pojazdów w oddzielnej aplikacji GPS? (pomnożymy przez liczbę spedytorów)",
-          value:answers.gps_checks_per_day, onChange:function(v){ set("gps_checks_per_day",v); },
-          suffix:"razy/dzień", min:1, max:100,
-          hint:"Czas potrzebny na zalogowanie, znalezienie pojazdu i sprawdzenie pozycji - fireTMS pokazuje lokalizację w tej samej zakładce co zlecenie"
-        })
-      ),
+      answers.typ_firmy!=="S" && React.createElement(RG, {
+        label:"Czy spedytorzy regularnie przełączają się do osobnej aplikacji GPS, żeby sprawdzić lokalizację pojazdu?",
+        hint:"fireTMS pokazuje lokalizację bezpośrednio przy zleceniu — jedno kliknięcie zamiast logowania do osobnego systemu",
+        options:[
+          {value:"tak", label:"Tak, wchodzimy do osobnej aplikacji GPS"},
+          {value:"nie", label:"Nie, mamy GPS zintegrowany z systemem"},
+        ],
+        value:answers.gps_checks_per_day, onChange:function(v){ set("gps_checks_per_day", v==="tak" ? 10 : 0); }
+      }),
       answers.typ_firmy!=="S" && React.createElement(RG, {
         label:"Kiedy Państwo otrzymują dokumenty CMR od kierowców?",
         options:[
@@ -1253,16 +1216,7 @@ function App() {
         options:[{value:"tak",label:"Tak, regularnie"},{value:"czasem",label:"Czasem"},{value:"nie",label:"Rzadko / nie"}],
         value:answers.problem_platnosci, onChange:function(v){ set("problem_platnosci",v); }
       }),
-      React.createElement(RG, {
-        label:"Czy Państwo mają trudności z wdrożeniem lub obsługą KSeF (Krajowy System e-Faktur)?",
-        options:[
-          {value:"tak",     label:"Tak, szukamy rozwiązania"},
-          {value:"mamy",    label:"Mamy już obsługę KSeF"},
-          {value:"nie",     label:"Jeszcze się tym nie zajmowaliśmy"},
-        ],
-        value:answers.ksef_problem, onChange:function(v){ set("ksef_problem",v); },
-        hint:"fireTMS posiada pełną obsługę KSeF w standardzie - bez dodatkowych opłat za moduł"
-      }),
+
       React.createElement(RG, {
         label:"W jaki sposób Państwo oznaczają faktury jako opłacone?",
         options:[
@@ -1320,10 +1274,14 @@ function App() {
     );
 
     if (id==="klient") return React.createElement(React.Fragment, null,
-      React.createElement(NI, {
-        label:"Ile razy dziennie klienci pytają o status swojego ładunku (czy kierowca już załadował, kiedy dojedzie itp.)?",
-        value:answers.pytania_klient, onChange:function(v){ set("pytania_klient",v); },
-        suffix:"razy/dzień", min:0, max:200
+      React.createElement(RG, {
+        label:"Czy klienci regularnie dzwonią lub piszą z pytaniem o status ładunku?",
+        hint:"fireTMS umożliwia wysłanie klientowi linku do śledzenia — widzi aktualną pozycję pojazdu bez dzwonienia do biura",
+        options:[
+          {value:"tak", label:"Tak, regularnie"},
+          {value:"nie", label:"Nie / rzadko"},
+        ],
+        value:answers.pytania_klient, onChange:function(v){ set("pytania_klient", v==="tak" ? 5 : 0); }
       }),
       React.createElement(RG, {
         label:"Czy Państwo stosują lub chcieliby stosować limity kredytowe dla klientów (maksymalna kwota niezapłaconych zobowiązań)?",
