@@ -1093,7 +1093,7 @@ function App() {
           {value:"tak", label:"Tak, wchodzimy do osobnej aplikacji GPS"},
           {value:"nie", label:"Nie, mamy GPS zintegrowany z systemem"},
         ],
-        value:answers.gps_checks_per_day, onChange:function(v){ set("gps_checks_per_day", v==="tak" ? 10 : 0); }
+        value:answers.gps_checks_per_day > 0 ? "tak" : "nie", onChange:function(v){ set("gps_checks_per_day", v==="tak" ? 10 : 0); }
       }),
       answers.typ_firmy!=="S" && React.createElement(RG, {
         label:"Kiedy Państwo otrzymują dokumenty CMR od kierowców?",
