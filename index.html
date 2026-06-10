@@ -1799,7 +1799,7 @@ function App() {
         })()
       ),
 
-      // Pakiet
+      // Pakiet + CTA (bez ceny)
       React.createElement("div", {style:{background:"linear-gradient(135deg,#1a2332 0%,#2d3a4d 100%)",borderRadius:14,padding:28,color:"#fff",marginBottom:20}},
         React.createElement("div", {style:{fontSize:12,fontWeight:700,letterSpacing:1.5,color:"#e8531e",marginBottom:8,textTransform:"uppercase"}}, "Sugerowany pakiet"),
         React.createElement("div", {style:{fontSize:26,fontWeight:800,marginBottom:4}}, "fireTMS "+typLabel(r.typ)+" "+r.minPakiet),
@@ -1808,45 +1808,37 @@ function App() {
           r.typ==="TS"&&(" / "+r.userKey+" użytkowników"),
           r.typ==="S"&&(r.userKey+" użytkowników")
         ),
-        React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:12}},
-          React.createElement("div", null,
-            React.createElement("div", {style:{fontSize:36,fontWeight:800}},
-              fmt(r.totalCena),
-              React.createElement("span", {style:{fontSize:16,fontWeight:500}}, " zł netto/mies")
+        React.createElement("div", {style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}},
+          React.createElement("div", {style:{flex:"1 1 280px"}},
+            React.createElement("div", {style:{fontSize:16,fontWeight:700,color:"#fff",marginBottom:8,lineHeight:1.4}},
+              "Ile kosztuje fireTMS dla Twojej firmy?"
             ),
-            // Breakdown skladowych ceny
-            React.createElement("div", {style:{marginTop:10,marginBottom:6,fontSize:12,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:8}},
-              React.createElement("div", {style:{color:"#aab3c0",display:"flex",justifyContent:"space-between",marginBottom:4}},
-                React.createElement("span", null, (function(){var label="fireTMS "+typLabel(r.typ)+" "+r.minPakiet;if(r.typ==="S") label+=" ("+r.userKey+" użytk.)";else if(r.typ==="TS") label+=" ("+r.pojKey+" pojazd. / "+r.userKey+" użytk.)";else if(r.typ!=="W") label+=" ("+r.pojKey+" pojazd.)";return label;})()),
-                React.createElement("span", {style:{color:"#cbd5e1",fontWeight:600}}, fmt(r.cena)+" zł")
+            React.createElement("div", {style:{fontSize:13,color:"#aab3c0",marginBottom:16,lineHeight:1.6}},
+              "Cena zależy od liczby użytkowników, modułów i okresu umowy — dlatego każdą ofertę przygotowujemy indywidualnie."
+            ),
+            React.createElement("div", {style:{background:"#e8531e",borderRadius:10,padding:"14px 18px",marginBottom:10}},
+              React.createElement("div", {style:{fontSize:14,fontWeight:700,color:"#fff",marginBottom:4}},
+                "📞 Umów prezentację online z konsultantem"
               ),
-              r.aiExtraPacks>0 && React.createElement("div", {style:{color:"#aab3c0",display:"flex",justifyContent:"space-between",marginBottom:4}},
-                React.createElement("span", null, "Pakiety AI: "+r.zlec+" zleceń / 50 = "+r.aiPacksNeeded+" pak., 1 wliczone → "+r.aiExtraPacks+" dodatkow"+(r.aiExtraPacks===1?"y":"e")+" × 35 zł"),
-                React.createElement("span", {style:{color:"#fbbf24",fontWeight:700}}, "+"+r.aiExtraCost+" zł")
-              ),
-              r.needsHere && React.createElement("div", {style:{color:"#aab3c0",display:"flex",justifyContent:"space-between",marginBottom:4}},
-                React.createElement("span", null, "Mapy HERE — kalkulator kosztów/rentowności trasy"),
-                React.createElement("span", {style:{color:"#fbbf24",fontWeight:700}}, "+70 zł")
+              React.createElement("div", {style:{fontSize:12,color:"rgba(255,255,255,0.88)",lineHeight:1.5}},
+                "Pokaże Ci system na żywo — bezpłatnie, bez zobowiązań."
               )
             ),
-            React.createElement("div", {style:{fontSize:12,color:"#aab3c0",marginTop:6}},
-              "Umowa 12 mies | Wdrożenie 3 mies z dedykowanym wdrożeniowcem | Wsparcie: tel/czat/mail"
-            ),
-            React.createElement("div", {style:{marginTop:10,background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 12px",fontSize:11,color:"#94a3b8",fontStyle:"italic",lineHeight:1.5}},
-              "⚠ Powyższe zestawienie ma charakter szacunkowy i nie stanowi oferty handlowej. Ostateczną wycenę, dopasowaną do specyfiki Państwa firmy, przedstawi konsultant, który udostępnił Ci ten link."
-            ),
-            r.hasRabat && React.createElement("div", {style:{marginTop:10,background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#fbbf24",border:"1px solid rgba(251,191,36,0.3)"}},
-              React.createElement("strong", null, "Uwaga dla handlowca: "),
-              "Klient korzysta z produktu OCRK / Gbox / 4Trans - może przysługiwać dodatkowy rabat 12% na 1-2 usługi. Sprawdź możliwości przy przygotowaniu oferty."
+            React.createElement("div", {style:{fontSize:11,color:"#64748b",lineHeight:1.5}},
+              "Dane kontaktowe konsultanta znajdziesz w mailu z linkiem do tego raportu."
             )
           ),
-          React.createElement("div", {style:{textAlign:"right"}},
+          React.createElement("div", {style:{textAlign:"right",flexShrink:0}},
             React.createElement("div", {style:{fontSize:12,color:"#aab3c0",marginBottom:4}}, "Potencjał oszczędności"),
             React.createElement("div", {style:{fontSize:22,fontWeight:800,color:"#4ade80"}}, fmtR(totZlLo,totZlHi)+" zl/mies"),
             r.totZl >= r.totalCena
               ? React.createElement("div", {style:{fontSize:12,color:"#aab3c0",marginTop:2}}, "zwrot w "+roiLo+"-"+roiHi+" dni roboczych")
               : React.createElement("div", {style:{fontSize:11,color:"#fbbf24",marginTop:2,lineHeight:1.4}}, "⚑ Wynik nie uwzględnia korzyści jakościowych opisanych poniżej w raporcie (bezpieczeństwo danych, kontrola OCP, automatyczne powiadomienia i in.)")
           )
+        ),
+        r.hasRabat && (HANDLOWIEC_MODE || !!RAPORT_FROM_URL) && React.createElement("div", {style:{marginTop:14,background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#fbbf24",border:"1px solid rgba(251,191,36,0.3)"}},
+          React.createElement("strong", null, "Uwaga dla handlowca: "),
+          "Klient korzysta z produktu OCRK / Gbox / 4Trans - może przysługiwać dodatkowy rabat 12% na 1-2 usługi. Sprawdź możliwości przy przygotowaniu oferty."
         )
       ),
 
