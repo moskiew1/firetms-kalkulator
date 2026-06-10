@@ -1055,6 +1055,18 @@ function App() {
             );
           })
         )
+      ),
+      (answers.eurowag_produkty||[]).indexOf("gbox")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
+        React.createElement("strong", null, "GPS Eurowag (GBox/EVA): "),
+        "fireTMS integruje się z systemem GPS Eurowag — lokalizacja pojazdu widoczna bezpośrednio w zleceniu, bez przełączania aplikacji."
+      ),
+      (answers.eurowag_produkty||[]).indexOf("karty_paliwowe_eur")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
+        React.createElement("strong", null, "Karty paliwowe Eurowag: "),
+        "fireTMS importuje plik CSV bezpośrednio z kart Eurowag — koszty paliwa trafiają automatycznie do pojazdów. ~3 godz/mies oszczędności księgowej."
+      ),
+      (answers.eurowag_produkty||[]).indexOf("eva")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
+        React.createElement("strong", null, "Urządzenia EVA (Eurowag): "),
+        "fireTMS importuje opłaty drogowe z EVA automatycznie. ~1.5 godz/mies oszczędności księgowej."
       )
     );
 
@@ -1106,9 +1118,9 @@ function App() {
         value:answers.komunikacja_kierowca, onChange:function(v){ toggleMulti("komunikacja_kierowca", v); }
       }),
 
-      (answers.eurowag_produkty||[]).indexOf("gbox")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
-        React.createElement("strong", null, "System GPS Eurowag (GBox/EVA): "),
-        "fireTMS integruje się z systemem GPS Eurowag - lokalizacja pojazdu widoczna bezpośrednio w zleceniu, bez przełączania aplikacji."
+      answers.typ_firmy!=="S" && (answers.komunikacja_kierowca||[]).indexOf("aplikacja")<0 && React.createElement(InfoBox, {color:"#1e40af",bg:"#eff6ff"},
+        React.createElement("strong", null, "Aplikacja Driver i szablony SMS: "),
+        "fireTMS posiada wbudowaną aplikację mobilną Driver — kierowca dostaje zlecenie, statusy i dokumenty prosto na telefon. Nie chcesz aplikacji? Jeden klik generuje gotowy szablon SMS z trasą, ładunkiem i godzinami, który wysyłasz bezpośrednio ze zlecenia."
       ),
       answers.typ_firmy!=="S" && React.createElement(RG, {
         label:"Czy spedytorzy regularnie przełączają się do osobnej aplikacji GPS, żeby sprawdzić lokalizację pojazdu?",
@@ -1267,20 +1279,12 @@ function App() {
         value:answers.karty_paliwowe, onChange:function(v){ set("karty_paliwowe",v); },
         hint:"W tym karty DKV, UTA, Circle K i inne. fireTMS pobiera plik CSV z kart paliwowych i automatycznie wczytuje koszty paliwa do pojazdów - bez ręcznego przepisywania."
       }),
-      (answers.eurowag_produkty||[]).indexOf("karty_paliwowe_eur")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
-        React.createElement("strong", null, "Karty paliwowe Eurowag: "),
-        "fireTMS importuje plik CSV bezpośrednio z kart Eurowag - koszty paliwa trafiają automatycznie do pojazdów. ~3 godz/mies oszczędności księgowej."
-      ),
       (answers.eurowag_produkty||[]).indexOf("eva")<0 && React.createElement(RG, {
         label:"Czy Państwo korzystają z urządzeń do opłat drogowych (EVA / viaTOLL / OBU / myTOLL)?",
         options:[{value:"tak",label:"Tak"},{value:"nie",label:"Nie"}],
         value:answers.ma_oplaty_drogowe, onChange:function(v){ set("ma_oplaty_drogowe",v); },
         hint:"EVA to urządzenie Eurowag do e-myta. fireTMS importuje plik CSV z opłat drogowych i przypina koszty do pojazdów automatycznie - ~1.5 godz/mies oszczędności księgowej."
       }),
-      (answers.eurowag_produkty||[]).indexOf("eva")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
-        React.createElement("strong", null, "Urządzenia EVA (Eurowag): "),
-        "fireTMS importuje opłaty drogowe z EVA automatycznie. ~1.5 godz/mies oszczędności księgowej."
-      )
     );
 
     if (id==="klient") return React.createElement(React.Fragment, null,
