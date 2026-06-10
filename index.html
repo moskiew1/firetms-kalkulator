@@ -188,9 +188,9 @@ var R_LOW   = 0.70;
 var R_HIGH  = 1.38;
 
 var CENNIK = {
-  "T":   {Basic:{15:399,30:798,45:1197},   Premium:{15:549,30:1098,45:1647},   Enterprise:{15:649,30:1298,45:1947}},
-  "S":   {Basic:{6:399,12:798,18:1197},    Premium:{6:549,12:1098,18:1647},    Enterprise:{6:649,12:1298,18:1947}},
-  "TS":  {Basic:{15:549,30:1098,45:1647},  Premium:{15:645,30:1290,45:1935},   Enterprise:{15:859,30:1718,45:2577}},
+  "T":   {Basic:{15:440,30:880,45:1320},   Premium:{15:610,30:1210,45:1820},   Enterprise:{15:720,30:1430,45:2150}},
+  "S":   {Basic:{6:440,12:880,18:1320},    Premium:{6:610,12:1210,18:1820},    Enterprise:{6:720,12:1430,18:2150}},
+  "TS":  {Basic:{15:610,30:1210,45:1820},  Premium:{15:720,30:1430,45:2140},   Enterprise:{15:950,30:1900,45:2840}},
 };
 
 var GPS_LIST = [
@@ -748,10 +748,10 @@ function calcResults(a) {
   var pojKey  = gK(a.liczba_pojazdow||15);
   var userKey = gKS(Math.max(1, a.liczba_spedytorow||1));
   var cena = 0;
-  if (typ==="T")       cena = (CENNIK["T"][minPakiet]||{})[pojKey]  || 649;
-  else if (typ==="S")  cena = (CENNIK["S"][minPakiet]||{})[userKey] || 649;
-  else if (typ==="TS") cena = (CENNIK["TS"][minPakiet]||{})[pojKey] || 859;
-  else                 cena = 859; // W - domyslne
+  if (typ==="T")       cena = (CENNIK["T"][minPakiet]||{})[pojKey]  || 720;
+  else if (typ==="S")  cena = (CENNIK["S"][minPakiet]||{})[userKey] || 720;
+  else if (typ==="TS") cena = (CENNIK["TS"][minPakiet]||{})[pojKey] || 950;
+  else                 cena = 950; // W - domyslne
 
   // AI extra packs (Enterprise: 1 pak = 50 zleceń wliczone w abonament, każdy dodatkowy = 35 zł)
   var aiPacksNeeded = (minPakiet==="Enterprise" && zlec>0) ? Math.ceil(zlec/50) : 0;
@@ -827,38 +827,38 @@ function App() {
   var sr = useState(!!RAPORT_FROM_URL); var showR=sr[0];      var setShowR=sr[1];
   var sa = useState(RAPORT_FROM_URL ? Object.assign({}, RAPORT_FROM_URL) : {
     nazwa_firmy:"",
-    typ_firmy:"TS", liczba_firm:1,
-    liczba_pojazdow:15, liczba_spedytorow:6,
-    liczba_ksiegowosc:1,
-    ma_dodatkowych:"nie", role_dodatkowe:[], liczba_dodatkowych:0,
+    typ_firmy:"", liczba_firm:1,
+    liczba_pojazdow:0, liczba_spedytorow:0,
+    liczba_ksiegowosc:0,
+    ma_dodatkowych:"", role_dodatkowe:[], liczba_dodatkowych:0,
     eurowag_produkty:[],
-    typ_transportu:"mieszany", typ_ladunku:["standard"],
-    rozlicza_kierowcow:"nie", rozliczanie_jak:"",
+    typ_transportu:"", typ_ladunku:[],
+    rozlicza_kierowcow:"", rozliczanie_jak:"",
     uzywa_here:"",
-    zlecenia_mies:150, procent_adhoc:30,
+    zlecenia_mies:0, procent_adhoc:0,
     liczba_ltl:0,
     liczba_przeladunkow:0,
-    komunikacja_kierowca:["whatsapp"],
-    gps_system:"integracja", ma_gps:"tak", kontrole_gps_dziennie:0,
-    cmr_kiedy:"tydzien",
-    klienci_elektronicznie:"czesc", procent_elektronicznie:50,
-    pilnowanie_terminow:["excel"],
-    wie_rentownosc:"nie",
-    fv_wystawia:["ksiegowa"],
-    waluta_faktur:"eur",
-    wymaga_pdf_pakiet:"nie", procent_pakiet_pdf:80,
-    problem_platnosci:"czasem",
-    uzywa_poczty:"tak", listy_pocztowe:20,
-    uzywa_enadawcy:"nie",
-    karty_paliwowe:"nie",
-    ma_oplaty_drogowe:"nie",
-    oznaczanie_platnosci:"kazda_osobno",
-    wysyla_fv_mailem:"nie",
-    pytania_klient:5, dokumenty_gdzie:"chmura",
-    tylko_sprzedaz:"tak",
-    prowadzi_pojazdy:"nie", liczba_pojazdow_przew:0,
-    rozliczenie_przewoznik:"fracht",
-    liczba_przewoznikow:10, weryfikuje_ocp:"czasem",
+    komunikacja_kierowca:[],
+    gps_system:"", ma_gps:"", kontrole_gps_dziennie:0,
+    cmr_kiedy:"",
+    klienci_elektronicznie:"", procent_elektronicznie:0,
+    pilnowanie_terminow:[],
+    wie_rentownosc:"",
+    fv_wystawia:[],
+    waluta_faktur:"",
+    wymaga_pdf_pakiet:"", procent_pakiet_pdf:0,
+    problem_platnosci:"",
+    uzywa_poczty:"", listy_pocztowe:0,
+    uzywa_enadawcy:"",
+    karty_paliwowe:"",
+    ma_oplaty_drogowe:"",
+    oznaczanie_platnosci:"",
+    wysyla_fv_mailem:"",
+    pytania_klient:0, dokumenty_gdzie:"",
+    tylko_sprzedaz:"",
+    prowadzi_pojazdy:"", liczba_pojazdow_przew:0,
+    rozliczenie_przewoznik:"",
+    liczba_przewoznikow:0, weryfikuje_ocp:"",
     trudnosci:"", frustracja_biurowa:"",
     elementy_powtarzalne:"", uwagi:"",
     oddzialy_wymiana:"", dispo_mobile:"",
@@ -1483,8 +1483,8 @@ function App() {
           hints.push({i:"📋",t:"4Trans — eksport gotowego pliku",d:"Klient używa 4Trans do rozliczania czasu pracy kierowców. fireTMS generuje gotowy plik Excel z trasami, datami i godzinami załadunku/rozładunku — bezpośredni import do 4Trans bez ręcznego uzupełniania."});
         else if (a.rozlicza_kierowcow==="tak")
           hints.push({i:"📋",t:"Rozliczanie czasu pracy — zweryfikuj system",d:"Klient przygotowuje ewidencję czasu pracy kierowców, ale nie korzysta z OCRK ani 4Trans. Zapytaj jakiej firmy/programu używa. Poinformuj, że fireTMS eksportuje dane załadunków do Excela lub pliku obsługiwanego przez 4Trans. Jeśli zdecyduje się na OCRK — integracja może być 100% automatyczna."});
-        if ((a.eurowag_produkty||[]).indexOf("ocrk")>=0||(a.eurowag_produkty||[]).indexOf("4trans")>=0)
-          hints.push({i:"💰",t:"OCRK / 4Trans — rabat 12%",d:"Klient z produktem OCRK/4Trans może kwalifikować się na rabat 12% na 1-2 usługi fireTMS — zapytaj kierownika przed przygotowaniem oferty."});
+        if ((a.eurowag_produkty||[]).indexOf("ocrk")>=0||(a.eurowag_produkty||[]).indexOf("4trans")>=0||(a.eurowag_produkty||[]).indexOf("gbox")>=0)
+          hints.push({i:"💰",t:"OCRK / 4Trans / GBox — rabat 12%",d:"Klient z produktem OCRK/4Trans/GBox może kwalifikować się na rabat 12% na 1-2 usługi fireTMS — zapytaj kierownika przed przygotowaniem oferty."});
         if ((a.liczba_ltl||0)>0||(a.liczba_przeladunkow||0)>0)
           hints.push({i:"🔄",t:"LTL / przeładunki / przepinki",d:"System liczy km dla każdego pojazdu i dokładną rentowność per pojazd. Przy LTL i przepinkach to kluczowa funkcja — pokaż im raporty rentowności."});
         if ((a.pilnowanie_terminow||[]).indexOf("excel")>=0||(a.pilnowanie_terminow||[]).indexOf("glowa")>=0)
