@@ -1442,8 +1442,8 @@ function App() {
       TEST_MODE && React.createElement("div", {style:{background:"#ff6b00",color:"#fff",textAlign:"center",padding:"10px",fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:20,borderRadius:10}}, "⚠️ TRYB TESTOWY — statystyki nie są wysyłane"),
       RAPORT_FROM_URL && React.createElement("div", {style:{background:"#1a5fb4",color:"#fff",textAlign:"center",padding:"10px",fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:20,borderRadius:10}}, "👁 PODGLĄD HANDLOWCA — raport klienta "+ (answers.nazwa_firmy||"") +" | Możesz drukować jako PDF"),
 
-      // ── SEKCJA HANDLOWCA (tylko ?handlowiec=1) ────────────────────────────────
-      HANDLOWIEC_MODE && (function(){
+      // ── SEKCJA HANDLOWCA (tylko ?handlowiec=1 lub ?raport=...) ──────────────
+      (HANDLOWIEC_MODE || !!RAPORT_FROM_URL) && (function(){
         var a = answers;
         function fmtV(v) {
           if (v===null||v===undefined||v==="") return "—";
