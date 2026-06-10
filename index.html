@@ -1822,4 +1822,146 @@ function App() {
                 React.createElement("span", null, (function(){var label="fireTMS "+typLabel(r.typ)+" "+r.minPakiet;if(r.typ==="S") label+=" ("+r.userKey+" użytk.)";else if(r.typ==="TS") label+=" ("+r.pojKey+" pojazd. / "+r.userKey+" użytk.)";else if(r.typ!=="W") label+=" ("+r.pojKey+" pojazd.)";return label;})()),
                 React.createElement("span", {style:{color:"#cbd5e1",fontWeight:600}}, fmt(r.cena)+" zł")
               ),
-              r.aiExtraPacks>0 && React.createElement("div", {style:{color:"#aab3c0",display:"flex",justifyContent:"space-between",mar
+              r.aiExtraPacks>0 && React.createElement("div", {style:{color:"#aab3c0",display:"flex",justifyContent:"space-between",marginBottom:4}},
+                React.createElement("span", null, "Pakiety AI: "+r.zlec+" zleceń / 50 = "+r.aiPacksNeeded+" pak., 1 wliczone → "+r.aiExtraPacks+" dodatkow"+(r.aiExtraPacks===1?"y":"e")+" × 35 zł"),
+                React.createElement("span", {style:{color:"#fbbf24",fontWeight:700}}, "+"+r.aiExtraCost+" zł")
+              ),
+              r.needsHere && React.createElement("div", {style:{color:"#aab3c0",display:"flex",justifyContent:"space-between",marginBottom:4}},
+                React.createElement("span", null, "Mapy HERE — kalkulator kosztów/rentowności trasy"),
+                React.createElement("span", {style:{color:"#fbbf24",fontWeight:700}}, "+70 zł")
+              )
+            ),
+            React.createElement("div", {style:{fontSize:12,color:"#aab3c0",marginTop:6}},
+              "Umowa 12 mies | Wdrożenie 3 mies z dedykowanym wdrożeniowcem | Wsparcie: tel/czat/mail"
+            ),
+            React.createElement("div", {style:{marginTop:10,background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 12px",fontSize:11,color:"#94a3b8",fontStyle:"italic",lineHeight:1.5}},
+              "⚠ Powyższe zestawienie ma charakter szacunkowy i nie stanowi oferty handlowej. Ostateczną wycenę, dopasowaną do specyfiki Państwa firmy, przedstawi konsultant, który udostępnił Ci ten link."
+            ),
+            r.hasRabat && React.createElement("div", {style:{marginTop:10,background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#fbbf24",border:"1px solid rgba(251,191,36,0.3)"}},
+              React.createElement("strong", null, "Uwaga dla handlowca: "),
+              "Klient korzysta z produktu OCRK / Gbox / 4Trans - może przysługiwać dodatkowy rabat 12% na 1-2 usługi. Sprawdź możliwości przy przygotowaniu oferty."
+            )
+          ),
+          React.createElement("div", {style:{textAlign:"right"}},
+            React.createElement("div", {style:{fontSize:12,color:"#aab3c0",marginBottom:4}}, "Potencjał oszczędności"),
+            React.createElement("div", {style:{fontSize:22,fontWeight:800,color:"#4ade80"}}, fmtR(totZlLo,totZlHi)+" zl/mies"),
+            r.totZl >= r.totalCena
+              ? React.createElement("div", {style:{fontSize:12,color:"#aab3c0",marginTop:2}}, "zwrot w "+roiLo+"-"+roiHi+" dni roboczych")
+              : React.createElement("div", {style:{fontSize:11,color:"#fbbf24",marginTop:2,lineHeight:1.4}}, "⚑ Wynik nie uwzględnia korzyści jakościowych opisanych poniżej w raporcie (bezpieczeństwo danych, kontrola OCP, automatyczne powiadomienia i in.)")
+          )
+        )
+      ),
+
+      // Zastrzezenie
+      React.createElement("div", {style:{background:"#fef0eb",borderRadius:10,padding:16,fontSize:12,color:"#7a4a2e",lineHeight:1.6,marginBottom:20}},
+        React.createElement("strong", null, "Uczciwe zastrzeżenie: "),
+        "Powyższe szacunki opierają się na medianie wynagrodzeń rynkowych 2026 i uśrednionych czasach operacji. Przedział (dolna-górna granica) uwzględnia różnice między firmami. Część oszczędności pojawia się od 1. miesiąca, część po pełnym wdrożeniu (~3 mies). Nie wliczamy wartości windykacji, ochrony OCP ani korzyści z raportów rentowności."
+      ),
+
+      // Informacje dodatkowe (neutralna sekcja dla klienta)
+      (answers.trudnosci||answers.frustracja_biurowa||answers.elementy_powtarzalne||answers.uwagi) && React.createElement("div", {style:{background:"#f8fafc",borderRadius:12,padding:20,marginBottom:20,border:"1px solid #e2e8f0"}},
+        React.createElement("div", {style:{fontSize:11,fontWeight:800,color:"#475569",letterSpacing:1.5,marginBottom:14,textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}},
+          React.createElement("span", {style:{background:"#64748b",color:"#fff",borderRadius:6,padding:"2px 8px",fontSize:10}}, "📋"),
+          "Informacje dodatkowe — obszary warte uwagi"
+        ),
+        answers.trudnosci && React.createElement("div", {style:{marginBottom:12,padding:"10px 14px",background:"#fff",borderRadius:8,border:"1px solid #e2e8f0"}},
+          React.createElement("div", {style:{fontSize:10,fontWeight:700,color:"#475569",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}, "Obszary wymagające usprawnienia"),
+          React.createElement("div", {style:{fontSize:13,color:"#1a2332",lineHeight:1.5}}, answers.trudnosci)
+        ),
+        answers.frustracja_biurowa && React.createElement("div", {style:{marginBottom:12,padding:"10px 14px",background:"#fff",borderRadius:8,border:"1px solid #e2e8f0"}},
+          React.createElement("div", {style:{fontSize:10,fontWeight:700,color:"#475569",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}, "Priorytety do poprawy"),
+          React.createElement("div", {style:{fontSize:13,color:"#1a2332",lineHeight:1.5}}, answers.frustracja_biurowa)
+        ),
+        answers.elementy_powtarzalne && React.createElement("div", {style:{marginBottom:answers.uwagi?12:0,padding:"10px 14px",background:"#fff",borderRadius:8,border:"1px solid #e2e8f0"}},
+          React.createElement("div", {style:{fontSize:10,fontWeight:700,color:"#475569",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}, "Procesy do automatyzacji"),
+          React.createElement("div", {style:{fontSize:13,color:"#1a2332",lineHeight:1.5}}, answers.elementy_powtarzalne)
+        ),
+        answers.uwagi && React.createElement("div", {style:{padding:"10px 14px",background:"#fff",borderRadius:8,border:"1px solid #fde68a"}},
+          React.createElement("div", {style:{fontSize:10,fontWeight:700,color:"#b45309",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}, "Dodatkowe uwagi / wątpliwości"),
+          React.createElement("div", {style:{fontSize:13,color:"#1a2332",lineHeight:1.5}}, answers.uwagi)
+        )
+      ),
+
+      // CTA - zaproszenie na prezentacje
+      React.createElement("div", {style:{background:"linear-gradient(135deg,#e8531e 0%,#c13d0f 100%)",borderRadius:16,padding:28,marginBottom:20,color:"#fff",textAlign:"center"}},
+        React.createElement("div", {style:{fontSize:11,fontWeight:800,letterSpacing:2,marginBottom:10,opacity:0.85,textTransform:"uppercase"}}, "Następny krok"),
+        React.createElement("div", {style:{fontSize:20,fontWeight:800,marginBottom:10,lineHeight:1.3}},
+          "Umów bezpłatną prezentację systemu"
+        ),
+        React.createElement("div", {style:{fontSize:14,lineHeight:1.7,opacity:0.92,marginBottom:16}},
+          "Jeśli wyniki analizy Cię zainteresowały — zapraszamy na niezobowiązującą prezentację fireTMS. Pokażemy system na żywo, w praktyce, na realnych przykładach z branży transportowej."
+        ),
+        React.createElement("div", {style:{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"12px 20px",fontSize:13,fontWeight:600}},
+          "📧 Skontaktuj się z konsultantem, który udostępnił Ci link do tego kalkulatora — jego dane znajdziesz w wiadomości e-mail, w której otrzymałeś/aś ten link."
+        )
+      ),
+
+      URL_REF && React.createElement("div", {style:{fontSize:11,color:"#aab3c0",textAlign:"right",marginBottom:8}},
+        "ref: "+URL_REF
+      ),
+      React.createElement("div", {style:{display:"flex",gap:12}, className:"no-print"},
+        React.createElement("button", {className:"btn-nav btn-prev", onClick:prev, style:{flex:1}}, "Zmień odpowiedzi"),
+        React.createElement("button", {className:"btn-nav btn-next", onClick:function(){
+          // Minimalne statystyki przez mailto (fallback dla pliku lokalnego)
+          var stats = "ref="+URL_REF+"&typ="+answers.typ_firmy+"&pojazdy="+answers.liczba_pojazdow+"&zlecenia="+answers.zlecenia_mies+"&pakiet="+res.minPakiet+"&oszczednosci="+Math.round(res.totZl)+"zl";
+          try { localStorage.setItem("firetms_last_report_"+Date.now(), stats); } catch(e){}
+          window.print();
+        }, style:{flex:1}}, "Drukuj / Zapisz PDF")
+      )
+    );
+  }
+
+  // ── FORMULARZ ─────────────────────────────────────────────────
+
+  return React.createElement("div", {style:{maxWidth:700,margin:"0 auto",padding:"32px 20px",fontFamily:"'DM Sans',sans-serif"}},
+    TEST_MODE && React.createElement("div", {style:{background:"#ff6b00",color:"#fff",textAlign:"center",padding:"10px",fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:20,borderRadius:10}}, "⚠️ TRYB TESTOWY — statystyki nie są wysyłane"),
+    React.createElement("div", {style:{textAlign:"center",marginBottom:32}},
+      React.createElement("div", {style:{display:"inline-block",background:"#e8531e",color:"#fff",fontSize:11,fontWeight:800,letterSpacing:2,padding:"4px 14px",borderRadius:20,marginBottom:12}}, "ANALIZA EFEKTYWNOŚCI FIRMY"),
+      React.createElement("h1", {style:{fontSize:24,fontWeight:800,color:"#1a2332",margin:0}}, "fireTMS — Analiza efektywności firmy"),
+  React.createElement("p", {style:{fontSize:14,color:"#7a8699",marginTop:8,lineHeight:1.5}}, "Odpowiedz na kilka pytań. Na końcu otrzymasz spersonalizowany raport z szacowanymi oszczędnościami.")
+    ),
+
+    // Pasek postepu
+    React.createElement("div", {style:{display:"flex",gap:4,marginBottom:6}},
+      STEPS.map(function(s,i){
+        return React.createElement("div", {key:i, style:{flex:1,height:5,borderRadius:3,background:i<=step?"#e8531e":"#e8ecf1",transition:"background 0.3s"}});
+      })
+    ),
+    React.createElement("div", {style:{display:"flex",justifyContent:"space-between",fontSize:12,color:"#7a8699",marginBottom:24}},
+      React.createElement("span", {style:{fontWeight:600,color:"#e8531e"}}, STEPS[step].label),
+      React.createElement("span", null, "Krok "+(step+1)+" z "+STEPS.length)
+    ),
+
+    // Pytania
+    React.createElement("div", {style:{background:"#fff",borderRadius:16,padding:28,marginBottom:20,boxShadow:"0 2px 20px rgba(0,0,0,0.06)",minHeight:280}},
+      renderStep()
+    ),
+
+    // Nawigacja
+    React.createElement("div", {style:{display:"flex",gap:12,marginBottom:20}},
+      step>0 && React.createElement("button", {className:"btn-nav btn-prev", onClick:prev}, "Wstecz"),
+      React.createElement("button", {className:"btn-nav btn-next", onClick:next, style:{flex:1}},
+        step !== STEPS.length-1 ? "Dalej" : "Generuj raport"
+      )
+    ),
+
+    // Live podglad
+    React.createElement("div", {style:{background:"#fff",borderRadius:12,padding:16,border:"1px solid #e8ecf1"}},
+      React.createElement("div", {style:{fontWeight:700,marginBottom:8,color:"#3d4a5c",fontSize:12,textTransform:"uppercase",letterSpacing:1}}, "Podgląd na żywo"),
+      React.createElement("div", {style:{display:"flex",flexWrap:"wrap",gap:"6px 20px",fontSize:13}},
+        React.createElement("span", {style:{color:"#7a8699"}}, "Spedytor: ",
+          React.createElement("strong", {style:{color:"#1a2332"}}, fmtH(res.spedGodz)+"/mies ("+fmt(res.spedZl)+" zl)")
+        ),
+        React.createElement("span", {style:{color:"#7a8699"}}, "Księgowa: ",
+          React.createElement("strong", {style:{color:"#1a2332"}}, fmtH(res.ksGodz)+"/mies ("+fmt(res.ksZl)+" zl)")
+        ),
+        React.createElement("span", {style:{fontWeight:700,color:"#0d6e3f"}}, "Razem: ~"+fmt(res.totZl)+" zl/mies")
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App, null));
+</script>
+</body>
+</html>
