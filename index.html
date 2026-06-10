@@ -623,14 +623,16 @@ function calcResults(a) {
   // ── OCRK / 4Trans - rozliczanie czasu pracy kierowcow ────────
   if ((isT||isW) && a.rozlicza_kierowcow==="tak") {
     var pojOCRK = a.liczba_pojazdow || 15;
-    if (a.rozliczanie_jak==="ocrk") {
+    var eurowagProd = a.eurowag_produkty || [];
+    var rozliczenieJak = eurowagProd.indexOf("ocrk")>=0 ? "ocrk" : (eurowagProd.indexOf("4trans")>=0 ? "4trans" : null);
+    if (rozliczenieJak==="ocrk") {
       minSped.push({
         nazwa:"Integracja z OCRK - auto-wysyłka danych załadunków/rozładunków",
         min: pojOCRK*15,
         pakiet:"Enterprise",
         opis:pojOCRK+" pojazdów x 15 min/mies (eliminacja ręcznego uzupełniania excela dla OCRK)"
       });
-    } else if (a.rozliczanie_jak==="4trans") {
+    } else if (rozliczenieJak==="4trans") {
       minSped.push({
         nazwa:"Eksport do 4Trans - gotowy Excel z trasami kierowców",
         min: pojOCRK*15,
@@ -1182,27 +1184,13 @@ function App() {
         value:answers.rozlicza_kierowcow, onChange:function(v){ set("rozlicza_kierowcow",v); },
         hint:"Dot. obowiązku ewidencji czasu pracy - firmy transportowe i produkcyjne z własną flotą"
       }),
-      answers.rozlicza_kierowcow==="tak" && React.createElement(Cond, null,
-        React.createElement(RG, {
-          label:"W jaki sposób Państwo rozliczają czas pracy kierowców?",
-          options:(function(){
-            var hasOcrk = (answers.eurowag_produkty||[]).indexOf("ocrk")>=0;
-            var opts = [{value:"ocrk", label:"OCRK (firma zewnętrzna z grupy Eurowag)"}];
-            if (!hasOcrk) opts.push({value:"4trans", label:"4Trans (oprogramowanie)"});
-            opts.push({value:"inny_program", label:"Sami w innym programie"});
-            if (!hasOcrk) opts.push({value:"inna_firma", label:"Inna firma zewnętrzna"});
-            return opts;
-          })(),
-          value:answers.rozliczanie_jak, onChange:function(v){ set("rozliczanie_jak",v); }
-        }),
-        answers.rozliczanie_jak==="ocrk" && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
-          React.createElement("strong", null, "Integracja fireTMS + OCRK: "),
-          "Jeśli uzupełniacie Excela z załadunkami i rozładunkami dla OCRK - fireTMS może wysyłać te dane bezpośrednio przez API. Zero ręcznego uzupełniania, ~15 min/pojazd/mies oszczędności."
-        ),
-        answers.rozliczanie_jak==="4trans" && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
-          React.createElement("strong", null, "fireTMS + 4Trans: "),
-          "4Trans to nasz produkt - fireTMS generuje gotowy plik Excel z trasami, czasami załadunku i rozładunku na podstawie zleceń. ~15 min/pojazd/mies oszczędności."
-        )
+      answers.rozlicza_kierowcow==="tak" && (answers.eurowag_produkty||[]).indexOf("ocrk")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
+        React.createElement("strong", null, "Integracja fireTMS + OCRK: "),
+        "Dane o załadunkach i rozładunkach przejdą z fireTMS do OCRK automatycznie przez API — zero ręcznego uzupełniania."
+      ),
+      answers.rozlicza_kierowcow==="tak" && (answers.eurowag_produkty||[]).indexOf("4trans")>=0 && React.createElement(InfoBox, {color:"#0d6e3f",bg:"#f0faf5"},
+        React.createElement("strong", null, "fireTMS + 4Trans: "),
+        "fireTMS generuje gotowy plik Excel z trasami, czasami załadunku i rozładunku na podstawie zleceń — ~15 min/pojazd/mies oszczędności."
       )
     );
 
@@ -1303,7 +1291,7 @@ function App() {
           {value:"tak", label:"Tak, regularnie"},
           {value:"nie", label:"Nie / rzadko"},
         ],
-        value:answers.pytania_klient, onChange:function(v){ set("pytania_klient", v==="tak" ? 5 : 0); }
+        value:answers.pytania_klient > 0 ? "tak" : "nie", onChange:function(v){ set("pytania_klient", v==="tak" ? 5 : 0); }
       }),
       React.createElement(RG, {
         label:"Czy Państwo stosują lub chcieliby stosować limity kredytowe dla klientów (maksymalna kwota niezapłaconych zobowiązań)?",
@@ -1485,12 +1473,18 @@ function App() {
           hints.push({i:"🏢",t:"Kilka firm/oddziałów ("+a.liczba_firm+" szt.)",d:"Podkreśl, że fireTMS obsługuje wszystkie firmy/oddziały w jednym systemie — koniec ze skakaniem między programami. Wspólny widok floty, zlecenia między oddziałami bez telefonów."});
         if (a.karty_paliwowe==="tak"||(a.eurowag_produkty||[]).indexOf("gbox")>=0||(a.eurowag_produkty||[]).indexOf("eva")>=0)
           hints.push({i:"⛽",t:"Karty paliwowe / urządzenia EVA-GBox",d:"Integracja jest gotowa — dane wczytują się automatycznie, bez plików i ręcznego uzgadniania transakcji. Pokaż jak wygląda import w praktyce."});
+        if ((a.eurowag_produkty||[]).indexOf("ocrk")>=0 && a.rozlicza_kierowcow==="tak")
+          hints.push({i:"📋",t:"OCRK — integracja 100% automatyczna",d:"Klient rozlicza czas pracy kierowców przez OCRK. Dane z fireTMS (daty, miejsca, godziny załadunku/rozładunku) mogą trafiać do OCRK automatycznie przez API — zero ręcznego uzupełniania. Podkreśl to jako kluczową korzyść."});
+        else if ((a.eurowag_produkty||[]).indexOf("4trans")>=0 && a.rozlicza_kierowcow==="tak")
+          hints.push({i:"📋",t:"4Trans — eksport gotowego pliku",d:"Klient używa 4Trans do rozliczania czasu pracy kierowców. fireTMS generuje gotowy plik Excel z trasami, datami i godzinami załadunku/rozładunku — bezpośredni import do 4Trans bez ręcznego uzupełniania."});
+        else if (a.rozlicza_kierowcow==="tak")
+          hints.push({i:"📋",t:"Rozliczanie czasu pracy — zweryfikuj system",d:"Klient przygotowuje ewidencję czasu pracy kierowców, ale nie korzysta z OCRK ani 4Trans. Zapytaj jakiej firmy/programu używa. Poinformuj, że fireTMS eksportuje dane załadunków do Excela lub pliku obsługiwanego przez 4Trans. Jeśli zdecyduje się na OCRK — integracja może być 100% automatyczna."});
         if ((a.eurowag_produkty||[]).indexOf("ocrk")>=0||(a.eurowag_produkty||[]).indexOf("4trans")>=0)
-          hints.push({i:"📋",t:"OCRK / 4Trans",d:"Dopytaj czy potrzebują szczegółowych dat i godzin załadunku/rozładunku do rozliczeń — dostępne wprost z systemu. Klient z OCRK/4Trans może kwalifikować się na rabat 12% — zapytaj kierownika."});
+          hints.push({i:"💰",t:"OCRK / 4Trans — rabat 12%",d:"Klient z produktem OCRK/4Trans może kwalifikować się na rabat 12% na 1-2 usługi fireTMS — zapytaj kierownika przed przygotowaniem oferty."});
         if ((a.liczba_ltl||0)>0||(a.liczba_przeladunkow||0)>0)
           hints.push({i:"🔄",t:"LTL / przeładunki / przepinki",d:"System liczy km dla każdego pojazdu i dokładną rentowność per pojazd. Przy LTL i przepinkach to kluczowa funkcja — pokaż im raporty rentowności."});
         if ((a.pilnowanie_terminow||[]).indexOf("excel")>=0||(a.pilnowanie_terminow||[]).indexOf("glowa")>=0)
-          hints.push({i:"📅",t:"Terminy OC/przeglądów w Excelu lub z głowy",d:"System wysyła automatyczne alerty email 7/3/1 dzień przed terminem. Monitoruje też wymiany oleju po przebiegu licznika — nigdy więcej przeoczonych terminów."});
+          hints.push({i:"📅",t:"Terminy OC/przeglądów w Excelu lub z głowy",d:"System wysyła automatyczne alerty email 30 lub 14 dni przed terminem (z możliwością własnej konfiguracji). Monitoruje też wymiany oleju po przebiegu licznika — nigdy więcej przeoczonych terminów."});
         if (a.problem_platnosci==="czasem"||a.problem_platnosci==="tak")
           hints.push({i:"💰",t:"Problemy z płatnościami / windykacja",d:"System automatycznie generuje ponaglenia płatności i pisma przedsądowe. Blokada klientów po przekroczeniu limitu zadłużenia — koniec z ręcznym ściganiem przeterminowanych faktur."});
         if ((a.pytania_klient||0)>0)
@@ -1498,9 +1492,9 @@ function App() {
         if (a.eksport_excel==="tak"||a.eksport_excel==="czasem")
           hints.push({i:"📊",t:"Ręczne raporty / eksport do Excela",d:"Pokaż gotowe filtry w systemie — wiek należności, rentowność, zestawienia klientów. Eksport do Excela w 30 sekund. Koniec ze składaniem raportów ręcznie."});
         if (a.uzywa_here==="tak")
-          hints.push({i:"🗺",t:"Posiada mapę z kalkulatorem trasy",d:"Dopytaj skąd mają tę mapę i czy za nią płacą osobno. Klienci Eurowag/GBox mogą ją mieć w pakiecie. W fireTMS mapa HERE dostępna za 1 zł/mies. po zatwierdzeniu przez kierownika."});
+          hints.push({i:"🗺",t:"Posiada mapę z kalkulatorem trasy",d:"Dopytaj skąd mają tę mapę i czy za nią płacą osobno. Klienci Eurowag/GBox mogą ją mieć w pakiecie. W fireTMS mapa HERE jest wbudowana — kalkulator kosztów trasy bezpośrednio przy zleceniu."});
         else if (a.uzywa_here==="nie"||a.uzywa_here==="chce")
-          hints.push({i:"🗺",t:"Brak mapy z kalkulatorem trasy",d:"Zaproponuj mapę HERE wbudowaną w fireTMS — kalkulator kosztów trasy bezpośrednio przy zleceniu, bez przeskakiwania do innych narzędzi. Dostępna za 1 zł/mies. po zgodzie kierownika."});
+          hints.push({i:"🗺",t:"Brak mapy z kalkulatorem trasy",d:"Zaproponuj mapę HERE wbudowaną w fireTMS — kalkulator kosztów trasy bezpośrednio przy zleceniu, bez przeskakiwania do innych narzędzi."});
         if (a.ma_gps==="tak")
           hints.push({i:"📡",t:"Ma GPS — sprawdź markę i integrację",d:"Zapytaj o markę GPS i sprawdź czy fireTMS ma integrację (Eurowag GBox, Webfleet, Ruptela, Navifleet i inne). Integracja = lokalizacja pojazdu widoczna bezpośrednio przy zleceniu."});
         if ((a.komunikacja_kierowca||[]).indexOf("whatsapp")>=0)
