@@ -68,9 +68,9 @@ textarea:focus{border-color:#e8531e;outline:none}
   <input type="hidden" name="klienci_elektronicznie"/>
   <input type="hidden" name="uzywa_here"/>
   <input type="hidden" name="zlecenia_stale_proc"/>
-  <input type="hidden" name="ltl_count"/>
-  <input type="hidden" name="przeladunki_count"/>
-  <input type="hidden" name="gps_checks_per_day"/>
+  <input type="hidden" name="liczba_ltl"/>
+  <input type="hidden" name="liczba_przeladunkow"/>
+  <input type="hidden" name="kontrole_gps_dziennie"/>
   <input type="hidden" name="pytania_klient"/>
   <input type="hidden" name="procent_adhoc"/>
   <input type="hidden" name="eksport_excel"/>
@@ -149,9 +149,9 @@ function sendStats(a, r) {
       "klienci_elektronicznie": a.klienci_elektronicznie || "",
       "uzywa_here":          a.uzywa_here || "",
       "zlecenia_stale_proc": String(a.zlecenia_stale_proc || ""),
-      "ltl_count":           String(a.ltl_count || 0),
-      "przeladunki_count":   String(a.przeladunki_count || 0),
-      "gps_checks_per_day":  String(a.gps_checks_per_day || 0),
+      "liczba_ltl":           String(a.liczba_ltl || 0),
+      "liczba_przeladunkow":   String(a.liczba_przeladunkow || 0),
+      "kontrole_gps_dziennie":  String(a.kontrole_gps_dziennie || 0),
       "pytania_klient":      String(a.pytania_klient || 0),
       "procent_adhoc":       String(a.procent_adhoc || 0),
       "eksport_excel":       a.eksport_excel || "",
@@ -209,7 +209,7 @@ var GPS_LIST = [
   "Le-Mar GPS System","Leon System","Lincor","Linqo","LocTracker","Locatruck","Logisat","Lokalizoo","Lontex","LupaGPS",
   "MAN (Logiweb)","MAN Digital / RIO","Mercedes (FleetBoard)","MiX Telematics","Monitoring GPS","MultiGPS","MYTRACKO",
   "Navicar","Navifleet","Naviman","Navira","Navisoft","Nawi24","Nawitronik","New Apex",
-  "Omnicomm","Other (ATLAS 1.0)","Other (ATLAS 3.0)","Other (rFMS 2.1)",
+  "Omnicomm","Inne (ATLAS 1.0)","Inne (ATLAS 3.0)","Inne (rFMS 2.1)",
   "Pointer","ProgressGPS",
   "QS Group",
   "Renault (Optifleet)","Ruptela (CargoTrack)","Ruptela (old)","Ruptela",
@@ -402,7 +402,7 @@ function calcResults(a) {
   // GPS checks (Enterprise) - 15 sek/sprawdzenie (przelaczanie miedzy programami), dla chłodni 7 sek
   var isChlodnia = (a.typ_ladunku||[]).indexOf("chlodn")>=0;
   if (isT && (a.ma_gps==="tak" || (a.eurowag_produkty||[]).indexOf("gbox")>=0)) {
-    var checks = a.gps_checks_per_day || 10;
+    var checks = a.kontrole_gps_dziennie || 10;
     var numSpedGps = a.liczba_spedytorow || 1;
     var secPerCheck = isChlodnia ? 7 : 15;
     var gpsMin = checks * numSpedGps * secPerCheck / 60 * DNI;
@@ -425,22 +425,22 @@ function calcResults(a) {
   }
 
   // LTL (Premium) - z konkretna iloscia
-  if ((a.ltl_count||0)>0) {
+  if ((a.liczba_ltl||0)>0) {
     minSped.push({
       nazwa:"Doładunki LTL - łączenie ładunków w systemie",
-      min: (a.ltl_count||0)*3,
+      min: (a.liczba_ltl||0)*3,
       pakiet:"Premium",
-      opis:(a.ltl_count||0)+" zleceń LTL x 3 min"
+      opis:(a.liczba_ltl||0)+" zleceń LTL x 3 min"
     });
   }
 
   // Przeladunki (Premium) - z konkretna iloscia
-  if ((a.przeladunki_count||0)>0) {
+  if ((a.liczba_przeladunkow||0)>0) {
     minSped.push({
       nazwa:"Zlecenia z przeładunkami / przepinkami",
-      min: (a.przeladunki_count||0)*3,
+      min: (a.liczba_przeladunkow||0)*3,
       pakiet:"Premium",
-      opis:(a.przeladunki_count||0)+" zleceń z przeładunkiem x 3 min"
+      opis:(a.liczba_przeladunkow||0)+" zleceń z przeładunkiem x 3 min"
     });
   }
 
@@ -834,10 +834,10 @@ function App() {
     rozlicza_kierowcow:"nie", rozliczanie_jak:"",
     uzywa_here:"",
     zlecenia_mies:150, procent_adhoc:30,
-    ltl_count:0,
-    przeladunki_count:0,
+    liczba_ltl:0,
+    liczba_przeladunkow:0,
     komunikacja_kierowca:["whatsapp"],
-    gps_system:"integracja", ma_gps:"tak", gps_checks_per_day:0,
+    gps_system:"integracja", ma_gps:"tak", kontrole_gps_dziennie:0,
     cmr_kiedy:"tydzien",
     klienci_elektronicznie:"czesc", procent_elektronicznie:50,
     pilnowanie_terminow:["excel"],
@@ -1071,13 +1071,13 @@ function App() {
       React.createElement(NI, {
         label:"Ile zleceń LTL (doładunki, kilku klientów w jednym pojeździe) Państwo realizują miesięcznie?",
         hint:"Wpisz 0 jeśli nie realizują Państwo zleceń LTL",
-        value:answers.ltl_count, onChange:function(v){ set("ltl_count",v); },
+        value:answers.liczba_ltl, onChange:function(v){ set("liczba_ltl",v); },
         suffix:"zleceń LTL/mies", min:0, max:2000
       }),
       React.createElement(NI, {
         label:"Ile przeładunków / przepinek miesięcznie Państwo wykonują?",
         hint:"Wpisz 0 jeśli nie wykonują Państwo przeładunków ani przepinek",
-        value:answers.przeladunki_count, onChange:function(v){ set("przeladunki_count",v); },
+        value:answers.liczba_przeladunkow, onChange:function(v){ set("liczba_przeladunkow",v); },
         suffix:"przeładunków/mies", min:0, max:1000
       }),
       answers.procent_adhoc>0 && React.createElement(RG, {
@@ -1115,7 +1115,7 @@ function App() {
           {value:"tak", label:"Tak, wchodzimy do osobnej aplikacji GPS"},
           {value:"nie", label:"Nie, mamy GPS zintegrowany z systemem"},
         ],
-        value:answers.gps_checks_per_day > 0 ? "tak" : "nie", onChange:function(v){ set("gps_checks_per_day", v==="tak" ? 10 : 0); }
+        value:answers.kontrole_gps_dziennie > 0 ? "tak" : "nie", onChange:function(v){ set("kontrole_gps_dziennie", v==="tak" ? 10 : 0); }
       }),
       answers.typ_firmy!=="S" && React.createElement(RG, {
         label:"Kiedy Państwo otrzymują dokumenty CMR od kierowców?",
@@ -1458,8 +1458,8 @@ function App() {
           {l:"Spedytorów",                v: a.liczba_spedytorow||0},
           {l:"Zleceń/mies.",              v: a.zlecenia_mies||0},
           {l:"% ad-hoc / giełda",         v: (a.procent_adhoc||0)+"%"},
-          {l:"LTL zleceń/mies.",          v: a.ltl_count||0},
-          {l:"Przeładunki/mies.",         v: a.przeladunki_count||0},
+          {l:"LTL zleceń/mies.",          v: a.liczba_ltl||0},
+          {l:"Przeładunki/mies.",         v: a.liczba_przeladunkow||0},
           {l:"Typ transportu",            v: a.typ_transportu||"—"},
           {l:"GPS",                       v: a.ma_gps||"—"},
           {l:"Eurowag produkty",          v: (a.eurowag_produkty||[]).join(", ")||"brak"},
@@ -1487,7 +1487,7 @@ function App() {
           hints.push({i:"⛽",t:"Karty paliwowe / urządzenia EVA-GBox",d:"Integracja jest gotowa — dane wczytują się automatycznie, bez plików i ręcznego uzgadniania transakcji. Pokaż jak wygląda import w praktyce."});
         if ((a.eurowag_produkty||[]).indexOf("ocrk")>=0||(a.eurowag_produkty||[]).indexOf("4trans")>=0)
           hints.push({i:"📋",t:"OCRK / 4Trans",d:"Dopytaj czy potrzebują szczegółowych dat i godzin załadunku/rozładunku do rozliczeń — dostępne wprost z systemu. Klient z OCRK/4Trans może kwalifikować się na rabat 12% — zapytaj kierownika."});
-        if ((a.ltl_count||0)>0||(a.przeladunki_count||0)>0)
+        if ((a.liczba_ltl||0)>0||(a.liczba_przeladunkow||0)>0)
           hints.push({i:"🔄",t:"LTL / przeładunki / przepinki",d:"System liczy km dla każdego pojazdu i dokładną rentowność per pojazd. Przy LTL i przepinkach to kluczowa funkcja — pokaż im raporty rentowności."});
         if ((a.pilnowanie_terminow||[]).indexOf("excel")>=0||(a.pilnowanie_terminow||[]).indexOf("glowa")>=0)
           hints.push({i:"📅",t:"Terminy OC/przeglądów w Excelu lub z głowy",d:"System wysyła automatyczne alerty email 7/3/1 dzień przed terminem. Monitoruje też wymiany oleju po przebiegu licznika — nigdy więcej przeoczonych terminów."});
@@ -1590,7 +1590,7 @@ function App() {
           if ((a.pilnowanie_terminow||[]).indexOf("excel")>=0||(a.pilnowanie_terminow||[]).indexOf("glowa")>=0)
             items.push({t:"Terminy OC, przeglądów, ubezpieczeń", teraz:"Excel lub notatnik — ryzyko pominięcia terminu", po:"Automatyczne alerty email 7 / 3 / 1 dzień przed — zero przeoczonych terminów"});
           if (a.ma_gps==="tak" && !hasGboxEva)
-            items.push({t:"Sprawdzanie GPS", teraz:"Osobna aplikacja GPS — logowanie, szukanie pojazdu, przełączanie okien ("+((a.gps_checks_per_day||10)*( a.liczba_spedytorow||1))+" razy/dzień)", po:"Lokalizacja pojazdu widoczna bezpośrednio w zleceniu — jedno kliknięcie, bez przełączania"});
+            items.push({t:"Sprawdzanie GPS", teraz:"Osobna aplikacja GPS — logowanie, szukanie pojazdu, przełączanie okien ("+((a.kontrole_gps_dziennie||10)*( a.liczba_spedytorow||1))+" razy/dzień)", po:"Lokalizacja pojazdu widoczna bezpośrednio w zleceniu — jedno kliknięcie, bez przełączania"});
           if (hasGboxEva)
             items.push({t:"GPS Eurowag (GBox/EVA)", teraz:"System GPS w osobnym panelu Eurowag", po:"Lokalizacja pojazdu widoczna bezpośrednio w zleceniu fireTMS — integracja gotowa"});
           if ((a.komunikacja_kierowca||[]).indexOf("aplikacja")<0)
